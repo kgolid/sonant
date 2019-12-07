@@ -30,18 +30,23 @@
 	const chromatic_scale = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
 	function get_major_scale(root, oc, notes) {
-	  const t1 = notes[root] + oc;
-	  const t2 = root + 2 < 12 ? notes[root + 2] + oc : notes[(root + 2) % 11] + (oc + 1);
-	  const t3 = root + 4 < 12 ? notes[root + 4] + oc : notes[(root + 4) % 11] + (oc + 1);
-	  const t4 = root + 5 < 12 ? notes[root + 5] + oc : notes[(root + 5) % 11] + (oc + 1);
-	  const t5 = root + 7 < 12 ? notes[root + 7] + oc : notes[(root + 7) % 11] + (oc + 1);
-	  const t6 = root + 9 < 12 ? notes[root + 9] + oc : notes[(root + 9) % 11] + (oc + 1);
-	  const t7 = root + 11 < 12 ? notes[root + 11] + oc : notes[(root + 11) % 11] + (oc + 1);
+	  const t0 = get_note(root, oc, notes);
+	  const t1 = get_note(root + 2, oc, notes);
+	  const t2 = get_note(root + 4, oc, notes);
+	  const t3 = get_note(root + 5, oc, notes);
+	  const t4 = get_note(root + 7, oc, notes);
+	  const t5 = get_note(root + 9, oc, notes);
+	  const t6 = get_note(root + 11, oc, notes);
 
-	  return [t1, t2, t3, t4, t5, t6, t7];
+	  return [t0, t1, t2, t3, t4, t5, t6];
 	}
 
-	const c_major_scale = oct => get_major_scale(0, oct, chromatic_scale);
+	function get_note(pos, octave, notes) {
+	  return pos < 12 ? notes[pos] + octave : notes[pos % 12] + (octave + 1);
+	}
+
+	const major_scale = (root, oct) =>
+	  get_major_scale(tone_to_index(root), oct, chromatic_scale);
 
 	// 1 - 7
 	const get_triad = (n, arr) => [
@@ -49,6 +54,13 @@
 	  arr[(n + 1) % arr.length],
 	  arr[(n + 3) % arr.length]
 	];
+
+	function tone_to_index(tone) {
+	  return chromatic_scale.indexOf(tone);
+	}
+
+	const p1564 = [1, 5, 6, 4];
+	const p4536 = [4, 5, 3, 6];
 
 	function random_partition(n, prob) {
 	  let arr = [];
@@ -70,25 +82,30 @@
 	  return Math.random() < prob;
 	}
 
-	var synth = new Tone$1.Synth().toMaster();
-	var polySynth = new Tone$1.PolySynth(3, Tone$1.Synth).toMaster();
-	var transport = Tone$1.Transport;
+	const synth = new Tone$1.Synth().toMaster();
+	const polySynth = new Tone$1.PolySynth(6, Tone$1.Synth).toMaster();
 
-	const scale = [].concat(c_major_scale(3), c_major_scale(4));
+	function create_transport() {
+	  const transport = Tone$1.Transport;
 
-	const progression = [1, 5, 6, 4];
-	//const progression = [1, 4, 6, 5];
-	//const progression = [4, 5, 3, 6];
-	//const progression = [random_degree(), random_degree(), random_degree(), random_degree()];
-	console.log(progression);
+	  const scale = [].concat(major_scale('F#', 3), major_scale('F#', 4));
+	  const dur1 = play_progression(transport, p1564, scale, 0);
+	  const dur2 = play_progression(transport, p4536, scale, dur1);
 
-	play_chord_and_melody(transport, progression[0], scale, 0);
-	play_chord_and_melody(transport, progression[1], scale, Tone$1.Time('1n'));
-	play_chord_and_melody(transport, progression[2], scale, Tone$1.Time('1n') * 2);
-	play_chord_and_melody(transport, progression[3], scale, Tone$1.Time('1n') * 3);
+	  transport.loop = true;
+	  transport.loopEnd = dur2;
 
-	transport.loop = true;
-	transport.loopEnd = Tone$1.Time('1n') * 4;
+	  return transport;
+	}
+
+	// -------
+
+	function play_progression(transport, progression, scale, time) {
+	  for (let i = 0; i < 4; i++) {
+	    play_chord_and_melody(transport, progression[i], scale, time + Tone$1.Time('1n') * i);
+	  }
+	  return time + Tone$1.Time('1n') * 4;
+	}
 
 	function play_chord_and_melody(transport, root, scale, time) {
 	  const durations = random_partition(6, 0.2);
@@ -115,10 +132,24 @@
 	  synth.triggerAttackRelease(note, duration, time);
 	}
 
-	document.querySelector('button').addEventListener('click', _ => transport.toggle());
-
 	function random_from(arr) {
 	  return arr[Math.floor(Math.random() * arr.length)];
 	}
+
+	const transport = create_transport();
+
+	function restart() {
+	  transport.stop();
+	  transport.clear();
+	  transport.start();
+	}
+
+	function stop() {
+	  transport.stop();
+	  transport.clear();
+	}
+
+	document.querySelector('#restart').addEventListener('click', _ => restart());
+	document.querySelector('#stop').addEventListener('click', _ => stop());
 
 }));

@@ -1,18 +1,23 @@
 const chromatic_scale = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
 function get_major_scale(root, oc, notes) {
-  const t1 = notes[root] + oc;
-  const t2 = root + 2 < 12 ? notes[root + 2] + oc : notes[(root + 2) % 11] + (oc + 1);
-  const t3 = root + 4 < 12 ? notes[root + 4] + oc : notes[(root + 4) % 11] + (oc + 1);
-  const t4 = root + 5 < 12 ? notes[root + 5] + oc : notes[(root + 5) % 11] + (oc + 1);
-  const t5 = root + 7 < 12 ? notes[root + 7] + oc : notes[(root + 7) % 11] + (oc + 1);
-  const t6 = root + 9 < 12 ? notes[root + 9] + oc : notes[(root + 9) % 11] + (oc + 1);
-  const t7 = root + 11 < 12 ? notes[root + 11] + oc : notes[(root + 11) % 11] + (oc + 1);
+  const t0 = get_note(root, oc, notes);
+  const t1 = get_note(root + 2, oc, notes);
+  const t2 = get_note(root + 4, oc, notes);
+  const t3 = get_note(root + 5, oc, notes);
+  const t4 = get_note(root + 7, oc, notes);
+  const t5 = get_note(root + 9, oc, notes);
+  const t6 = get_note(root + 11, oc, notes);
 
-  return [t1, t2, t3, t4, t5, t6, t7];
+  return [t0, t1, t2, t3, t4, t5, t6];
 }
 
-export const c_major_scale = oct => get_major_scale(0, oct, chromatic_scale);
+function get_note(pos, octave, notes) {
+  return pos < 12 ? notes[pos] + octave : notes[pos % 12] + (octave + 1);
+}
+
+export const major_scale = (root, oct) =>
+  get_major_scale(tone_to_index(root), oct, chromatic_scale);
 
 // 1 - 7
 export const get_triad = (n, arr) => [
@@ -28,3 +33,12 @@ export const get_fives = (n, arr) => [
   arr[(n + 2) % arr.length],
   arr[(n + 3) % arr.length]
 ];
+
+export function random_triad_from(arr) {
+  const root = Math.floor(Math.random() * arr.length);
+  return get_triad(root + 1, arr);
+}
+
+function tone_to_index(tone) {
+  return chromatic_scale.indexOf(tone);
+}
