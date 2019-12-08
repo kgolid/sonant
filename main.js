@@ -1,5 +1,5 @@
 import Tone from 'tone';
-import { major_scale, major_pentatonic_scale, minor_scale, get_triad } from './scales';
+import { major_scale, major_pentatonic_scale, get_triad, get_seventh } from './scales';
 import { tonics, all, random_path_progression } from './progressions';
 import { get_synth, get_polySynth, get_membraneSynth } from './synths';
 import { random_partition, random_subset } from './partition';
@@ -11,9 +11,7 @@ polySynth.toMaster();
 const membraneSynth = get_membraneSynth();
 membraneSynth.toMaster();
 
-const scale_root = 'E';
 const octave = 3;
-const progressions = path_random;
 
 let tick;
 

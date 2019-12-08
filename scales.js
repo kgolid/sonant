@@ -29,6 +29,13 @@ export const get_triad = (n, arr) => [
   arr[(n + 3) % arr.length]
 ];
 
+export const get_seventh = (n, arr) => [
+  arr[n - 1],
+  arr[(n + 1) % arr.length],
+  arr[(n + 3) % arr.length],
+  arr[(n + 5) % arr.length]
+];
+
 export const get_fives = (n, arr) => [
   arr[n - 1],
   arr[n],
