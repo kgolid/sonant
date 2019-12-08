@@ -4,7 +4,7 @@ export function get_synth() {
   const synth = new Tone.Synth({
     oscillator: { type: 'sine' },
     envelope: {
-      attack: 0.02,
+      attack: 0.03,
       decay: 0.1,
       sustain: 0.3,
       release: 0.2
