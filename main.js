@@ -1,45 +1,86 @@
 import Tone from 'tone';
-import { major_scale, get_triad } from './scales';
-import { p1564, p4536 } from './progressions';
-import { random_partition } from './partition';
+import { major_scale, major_pentatonic_scale, minor_scale, get_triad } from './scales';
+import { tonics, all } from './progressions';
+import { get_synth, get_polySynth, get_membraneSynth } from './synths';
+import { random_partition, random_subset } from './partition';
 
-const synth = new Tone.Synth().toMaster();
-const polySynth = new Tone.PolySynth(6, Tone.Synth).toMaster();
+const synth = get_synth();
+synth.toMaster();
+const polySynth = get_polySynth();
+polySynth.toMaster();
+const membraneSynth = get_membraneSynth();
+membraneSynth.toMaster();
+
+const scale_root = 'E';
+const octave = 3;
+const progressions = all;
 
 export default function create_transport() {
-  const transport = Tone.Transport;
+  const chord_scale = [].concat(
+    major_scale(scale_root, octave),
+    major_scale(scale_root, octave + 1)
+  );
 
-  const scale = [].concat(major_scale('F#', 3), major_scale('F#', 4));
-  const dur1 = play_progression(transport, p1564, scale, 0);
-  const dur2 = play_progression(transport, p4536, scale, dur1);
+  const off_chord = [].concat(
+    major_pentatonic_scale(scale_root, octave + 1),
+    major_pentatonic_scale(scale_root, octave + 2)
+  );
 
-  transport.loop = true;
-  transport.loopEnd = dur2;
+  new Tone.Loop(
+    (time, _) => play_progression(chord_scale, off_chord, time),
+    Tone.Time('1n') * 4
+  ).start(0);
 
-  return transport;
+  return Tone.Transport;
 }
 
 // -------
 
-function play_progression(transport, progression, scale, time) {
+function play_progression(scale, off_chord, time) {
+  const progression = random_from(progressions);
+  const beat = random_subset(4, 0.5);
+  const beat2 = random_subset(8, 0.5);
+
+  console.log('Chord progression: ', progression);
+  console.log('Beat: ', beat);
+  console.log('Beat2: ', beat2);
+
   for (let i = 0; i < 4; i++) {
-    play_chord_and_melody(transport, progression[i], scale, time + Tone.Time('1n') * i);
+    play_chord_and_melody(
+      progression[i],
+      scale,
+      off_chord,
+      beat,
+      beat2,
+      time + Tone.Time('1n') * i
+    );
   }
-  return time + Tone.Time('1n') * 4;
 }
 
-function play_chord_and_melody(transport, root, scale, time) {
-  const durations = random_partition(6, 0.2);
-  const triad = get_triad(root, scale);
-  const chord = triad;
-  const melody = triad;
+function play_chord_and_melody(root, scale, off_chord, beat, beat2, time) {
+  const durations = random_partition(8, 0.2);
+  const chord = get_triad(root, scale);
+  const melody = [].concat(chord, chord, chord, off_chord);
 
-  transport.schedule(t => play_chord(chord, '4n', t), time);
+  play_chord(chord, '4n', time);
 
-  let elapsed = time + Tone.Time('4n');
-  for (const duration of durations) {
-    transport.schedule(t => play_note(random_from(melody), duration, t), elapsed);
-    elapsed += Tone.Time(duration);
+  let elapsed = time;
+
+  for (let i = 0; i < durations.length; i++) {
+    const tones = i == durations.length - 1 ? chord : melody;
+    play_note(random_from(tones), durations[i], elapsed);
+    elapsed += Tone.Time(durations[i]);
+  }
+  elapsed = time;
+  for (let i = 0; i < beat.length; i++) {
+    if (beat[i]) play_beat('C2', '4n', elapsed);
+    elapsed += Tone.Time('4n');
+  }
+
+  elapsed = time;
+  for (let i = 0; i < beat2.length; i++) {
+    if (beat2[i]) play_beat('G2', '8n', elapsed);
+    elapsed += Tone.Time('8n');
   }
 }
 
@@ -51,6 +92,10 @@ function play_chord(note, duration, time) {
 function play_note(note, duration, time) {
   console.log(note, duration);
   synth.triggerAttackRelease(note, duration, time);
+}
+
+function play_beat(note, duration, time) {
+  membraneSynth.triggerAttackRelease(note, duration, time);
 }
 
 function random_from(arr) {

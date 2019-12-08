@@ -28,25 +28,24 @@
 	var Tone_1 = Tone.Tone;
 
 	const chromatic_scale = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+	const major_degrees = [0, 2, 4, 5, 7, 9, 11];
+	const major_pentatonic_degrees = [0, 2, 4, 7, 9];
 
-	function get_major_scale(root, oc, notes) {
-	  const t0 = get_note(root, oc, notes);
-	  const t1 = get_note(root + 2, oc, notes);
-	  const t2 = get_note(root + 4, oc, notes);
-	  const t3 = get_note(root + 5, oc, notes);
-	  const t4 = get_note(root + 7, oc, notes);
-	  const t5 = get_note(root + 9, oc, notes);
-	  const t6 = get_note(root + 11, oc, notes);
-
-	  return [t0, t1, t2, t3, t4, t5, t6];
+	function get_scale(root, oc, degrees) {
+	  return degrees.map(n => get_note(root + n, oc));
 	}
 
-	function get_note(pos, octave, notes) {
-	  return pos < 12 ? notes[pos] + octave : notes[pos % 12] + (octave + 1);
+	function get_note(pos, octave) {
+	  return pos < 12
+	    ? chromatic_scale[pos] + octave
+	    : chromatic_scale[pos % 12] + (octave + 1);
 	}
 
 	const major_scale = (root, oct) =>
-	  get_major_scale(tone_to_index(root), oct, chromatic_scale);
+	  get_scale(tone_to_index(root), oct, major_degrees);
+
+	const major_pentatonic_scale = (root, oct) =>
+	  get_scale(tone_to_index(root), oct, major_pentatonic_degrees);
 
 	// 1 - 7
 	const get_triad = (n, arr) => [
@@ -60,7 +59,49 @@
 	}
 
 	const p1564 = [1, 5, 6, 4];
+	const p1465 = [1, 4, 6, 5];
+	const p1645 = [1, 6, 4, 5];
+	const p1456 = [1, 4, 5, 6];
+	const p6415 = [6, 4, 1, 5];
+	const p1425 = [1, 4, 2, 5];
+	const p1415 = [1, 4, 1, 5];
 	const p4536 = [4, 5, 3, 6];
+	const all = [p1415, p1425, p1456, p1465, p1564, p1645, p6415, p4536];
+
+	function get_synth() {
+	  const synth = new Tone$1.Synth({
+	    oscillator: { type: 'sine' },
+	    envelope: {
+	      attack: 0.02,
+	      decay: 0.1,
+	      sustain: 0.3,
+	      release: 0.2
+	    }
+	  });
+
+	  return synth;
+	}
+
+	function get_polySynth() {
+	  const polySynth = new Tone$1.PolySynth(3, Tone$1.Synth, {
+	    oscillator: { type: 'triangle' },
+	    envelope: {
+	      attack: 0.1,
+	      decay: 0.1,
+	      sustain: 0.3,
+	      release: 0.1
+	    },
+	    volume: -5
+	  });
+
+	  return polySynth;
+	}
+
+	function get_membraneSynth() {
+	  const synth = new Tone$1.MembraneSynth();
+	  synth.volume.value = -10;
+	  return synth;
+	}
 
 	function random_partition(n, prob) {
 	  let arr = [];
@@ -78,47 +119,95 @@
 	  return arr;
 	}
 
+	function random_subset(n, prob) {
+	  let arr = [];
+	  for (let i = 0; i < n; i++) {
+	    arr.push(flip(prob));
+	  }
+	  return arr;
+	}
+
 	function flip(prob) {
 	  return Math.random() < prob;
 	}
 
-	const synth = new Tone$1.Synth().toMaster();
-	const polySynth = new Tone$1.PolySynth(6, Tone$1.Synth).toMaster();
+	const synth = get_synth();
+	synth.toMaster();
+	const polySynth = get_polySynth();
+	polySynth.toMaster();
+	const membraneSynth = get_membraneSynth();
+	membraneSynth.toMaster();
+
+	const scale_root = 'E';
+	const octave = 3;
+	const progressions = all;
 
 	function create_transport() {
-	  const transport = Tone$1.Transport;
+	  const chord_scale = [].concat(
+	    major_scale(scale_root, octave),
+	    major_scale(scale_root, octave + 1)
+	  );
 
-	  const scale = [].concat(major_scale('F#', 3), major_scale('F#', 4));
-	  const dur1 = play_progression(transport, p1564, scale, 0);
-	  const dur2 = play_progression(transport, p4536, scale, dur1);
+	  const off_chord = [].concat(
+	    major_pentatonic_scale(scale_root, octave + 1),
+	    major_pentatonic_scale(scale_root, octave + 2)
+	  );
 
-	  transport.loop = true;
-	  transport.loopEnd = dur2;
+	  new Tone$1.Loop(
+	    (time, _) => play_progression(chord_scale, off_chord, time),
+	    Tone$1.Time('1n') * 4
+	  ).start(0);
 
-	  return transport;
+	  return Tone$1.Transport;
 	}
 
 	// -------
 
-	function play_progression(transport, progression, scale, time) {
+	function play_progression(scale, off_chord, time) {
+	  const progression = random_from(progressions);
+	  const beat = random_subset(4, 0.5);
+	  const beat2 = random_subset(8, 0.5);
+
+	  console.log('Chord progression: ', progression);
+	  console.log('Beat: ', beat);
+	  console.log('Beat2: ', beat2);
+
 	  for (let i = 0; i < 4; i++) {
-	    play_chord_and_melody(transport, progression[i], scale, time + Tone$1.Time('1n') * i);
+	    play_chord_and_melody(
+	      progression[i],
+	      scale,
+	      off_chord,
+	      beat,
+	      beat2,
+	      time + Tone$1.Time('1n') * i
+	    );
 	  }
-	  return time + Tone$1.Time('1n') * 4;
 	}
 
-	function play_chord_and_melody(transport, root, scale, time) {
-	  const durations = random_partition(6, 0.2);
-	  const triad = get_triad(root, scale);
-	  const chord = triad;
-	  const melody = triad;
+	function play_chord_and_melody(root, scale, off_chord, beat, beat2, time) {
+	  const durations = random_partition(8, 0.2);
+	  const chord = get_triad(root, scale);
+	  const melody = [].concat(chord, chord, chord, off_chord);
 
-	  transport.schedule(t => play_chord(chord, '4n', t), time);
+	  play_chord(chord, '4n', time);
 
-	  let elapsed = time + Tone$1.Time('4n');
-	  for (const duration of durations) {
-	    transport.schedule(t => play_note(random_from(melody), duration, t), elapsed);
-	    elapsed += Tone$1.Time(duration);
+	  let elapsed = time;
+
+	  for (let i = 0; i < durations.length; i++) {
+	    const tones = i == durations.length - 1 ? chord : melody;
+	    play_note(random_from(tones), durations[i], elapsed);
+	    elapsed += Tone$1.Time(durations[i]);
+	  }
+	  elapsed = time;
+	  for (let i = 0; i < beat.length; i++) {
+	    if (beat[i]) play_beat('C2', '4n', elapsed);
+	    elapsed += Tone$1.Time('4n');
+	  }
+
+	  elapsed = time;
+	  for (let i = 0; i < beat2.length; i++) {
+	    if (beat2[i]) play_beat('G2', '8n', elapsed);
+	    elapsed += Tone$1.Time('8n');
 	  }
 	}
 
@@ -130,6 +219,10 @@
 	function play_note(note, duration, time) {
 	  console.log(note, duration);
 	  synth.triggerAttackRelease(note, duration, time);
+	}
+
+	function play_beat(note, duration, time) {
+	  membraneSynth.triggerAttackRelease(note, duration, time);
 	}
 
 	function random_from(arr) {

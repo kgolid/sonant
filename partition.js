@@ -14,6 +14,14 @@ export function random_partition(n, prob) {
   return arr;
 }
 
+export function random_subset(n, prob) {
+  let arr = [];
+  for (let i = 0; i < n; i++) {
+    arr.push(flip(prob));
+  }
+  return arr;
+}
+
 function flip(prob) {
   return Math.random() < prob;
 }

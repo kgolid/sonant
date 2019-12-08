@@ -1,23 +1,26 @@
 const chromatic_scale = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+const major_degrees = [0, 2, 4, 5, 7, 9, 11];
+const major_pentatonic_degrees = [0, 2, 4, 7, 9];
+const minor_degrees = [0, 2, 3, 5, 7, 8, 10];
 
-function get_major_scale(root, oc, notes) {
-  const t0 = get_note(root, oc, notes);
-  const t1 = get_note(root + 2, oc, notes);
-  const t2 = get_note(root + 4, oc, notes);
-  const t3 = get_note(root + 5, oc, notes);
-  const t4 = get_note(root + 7, oc, notes);
-  const t5 = get_note(root + 9, oc, notes);
-  const t6 = get_note(root + 11, oc, notes);
-
-  return [t0, t1, t2, t3, t4, t5, t6];
+function get_scale(root, oc, degrees) {
+  return degrees.map(n => get_note(root + n, oc));
 }
 
-function get_note(pos, octave, notes) {
-  return pos < 12 ? notes[pos] + octave : notes[pos % 12] + (octave + 1);
+function get_note(pos, octave) {
+  return pos < 12
+    ? chromatic_scale[pos] + octave
+    : chromatic_scale[pos % 12] + (octave + 1);
 }
 
 export const major_scale = (root, oct) =>
-  get_major_scale(tone_to_index(root), oct, chromatic_scale);
+  get_scale(tone_to_index(root), oct, major_degrees);
+
+export const major_pentatonic_scale = (root, oct) =>
+  get_scale(tone_to_index(root), oct, major_pentatonic_degrees);
+
+export const minor_scale = (root, oct) =>
+  get_scale(tone_to_index(root), oct, minor_degrees);
 
 // 1 - 7
 export const get_triad = (n, arr) => [
