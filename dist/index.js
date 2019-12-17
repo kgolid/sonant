@@ -150,7 +150,7 @@
 	}
 
 	function make_schemata(scale_root, octave) {
-	  const chord_scale = get_scale$1(scale_root, octave - 1);
+	  const chord_scale = get_scale$1(scale_root, octave);
 	  const scale = get_penta_scale(scale_root, octave);
 	  const progression = make_progression(chord_scale);
 	  const melody = make_melody();
