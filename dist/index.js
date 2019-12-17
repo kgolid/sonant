@@ -27,6 +27,37 @@
 	var Tone$1 = unwrapExports(Tone);
 	var Tone_1 = Tone.Tone;
 
+	function get_synth() {
+	  var synth = new Tone$1.Synth({
+	    oscillator: {
+	      type: 'sine'
+	    }
+	  });
+
+	  return synth;
+	}
+
+	function get_polySynth() {
+	  const polySynth = new Tone$1.PolySynth(3, Tone$1.Synth, {
+	    oscillator: { type: 'triangle' },
+	    envelope: {
+	      attack: 0.1,
+	      decay: 0.1,
+	      sustain: 0.3,
+	      release: 0.1
+	    },
+	    volume: -5
+	  });
+
+	  return polySynth;
+	}
+
+	function get_membraneSynth() {
+	  const synth = new Tone$1.MembraneSynth();
+	  synth.volume.value = -10;
+	  return synth;
+	}
+
 	const chromatic_scale = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 	const major_degrees = [0, 2, 4, 5, 7, 9, 11];
 	const major_pentatonic_degrees = [0, 2, 4, 7, 9];
@@ -58,6 +89,26 @@
 	  return chromatic_scale.indexOf(tone);
 	}
 
+	function random_partition(n, prob) {
+	  let arr = [];
+	  for (let i = 0; i < n; i++) {
+	    if (i !== n - 1 && flip(prob)) {
+	      arr.push('4n');
+	      i++;
+	    } else if (flip(prob)) {
+	      arr.push('16n');
+	      arr.push('16n');
+	    } else {
+	      arr.push('8n');
+	    }
+	  }
+	  return arr;
+	}
+
+	function flip(prob) {
+	  return Math.random() < prob;
+	}
+
 	function random_path_progression() {
 	  const c1 = 1;
 	  const c2 = random_degree();
@@ -72,193 +123,119 @@
 	}
 
 	function reduce_chord(chord) {
-	  if (chord === 2) return flip(0.5) ? 3 : 5;
-	  if (chord === 3) return flip(0.5) ? 4 : 6;
-	  if (chord === 4) return flip(0.5) ? 2 : 5;
-	  if (chord === 5) return flip(0.5) ? 3 : 6;
-	  if (chord === 6) return flip(0.5) ? 2 : 4;
-	}
-
-	function flip(prob) {
-	  return Math.random() < prob;
-	}
-
-	function get_synth() {
-	  const synth = new Tone$1.Synth({
-	    oscillator: { type: 'sine' },
-	    envelope: {
-	      attack: 0.03,
-	      decay: 0.1,
-	      sustain: 0.3,
-	      release: 0.2
-	    }
-	  });
-
-	  return synth;
-	}
-
-	function get_polySynth() {
-	  const polySynth = new Tone$1.PolySynth(3, Tone$1.Synth, {
-	    oscillator: { type: 'triangle' },
-	    envelope: {
-	      attack: 0.1,
-	      decay: 0.1,
-	      sustain: 0.3,
-	      release: 0.1
-	    },
-	    volume: -5
-	  });
-
-	  return polySynth;
-	}
-
-	function get_membraneSynth() {
-	  const synth = new Tone$1.MembraneSynth();
-	  synth.volume.value = -10;
-	  return synth;
-	}
-
-	function random_partition(n, prob) {
-	  let arr = [];
-	  for (let i = 0; i < n; i++) {
-	    if (flip$1(prob)) {
-	      arr.push('4n');
-	      i++;
-	    } else if (flip$1(prob)) {
-	      arr.push('16n');
-	      arr.push('16n');
-	    } else {
-	      arr.push('8n');
-	    }
-	  }
-	  return arr;
-	}
-
-	function random_subset(n, prob) {
-	  let arr = [];
-	  for (let i = 0; i < n; i++) {
-	    arr.push(flip$1(prob));
-	  }
-	  return arr;
+	  if (chord === 2) return flip$1(0.5) ? 3 : 5;
+	  if (chord === 3) return flip$1(0.5) ? 4 : 6;
+	  if (chord === 4) return flip$1(0.5) ? 2 : 5;
+	  if (chord === 5) return flip$1(0.5) ? 3 : 6;
+	  if (chord === 6) return flip$1(0.5) ? 2 : 4;
 	}
 
 	function flip$1(prob) {
 	  return Math.random() < prob;
 	}
 
-	const synth = get_synth();
-	synth.toMaster();
-	const polySynth = get_polySynth();
-	polySynth.toMaster();
-	const membraneSynth = get_membraneSynth();
-	membraneSynth.toMaster();
-
-	const octave = 3;
-
-	let tick;
-
-	function get_selected_scale_root() {
-	  var e = document.getElementById('scales');
-	  var scale = e.options[e.selectedIndex].value;
-	  console.log(scale);
-	  return scale;
+	function flip$2(prob) {
+	  return Math.random() < prob;
 	}
 
-	function get_chord_scale(root, octave) {
+	function generate_from_schemata({ scale, progression, melody }) {
+	  melody = mutate_melody(melody, 0.2);
+	  return progression.map(chord => ({
+	    chord,
+	    melody: mutate_melody(melody, 0).map(t => ({
+	      note: get_note$1(t, scale, chord),
+	      duration: t.duration
+	    }))
+	  }));
+	}
+
+	function make_schemata(scale_root, octave) {
+	  const chord_scale = get_scale$1(scale_root, octave - 1);
+	  const scale = get_penta_scale(scale_root, octave);
+	  const progression = make_progression(chord_scale);
+	  const melody = make_melody();
+
+	  return { scale, progression, melody };
+	}
+
+	function mutate_melody(melody, prob) {
+	  return melody.map(t => (flip$2(prob) ? make_relative_tone(t.duration, false) : t));
+	}
+
+	function get_note$1(relative_note, scale, chord) {
+	  const source = relative_note.source === 'chord' ? chord : scale;
+	  return source[relative_note.degree];
+	}
+
+	function get_scale$1(root, octave) {
 	  return [].concat(major_scale(root, octave), major_scale(root, octave + 1));
 	}
 
-	function get_off_chord(root, octave) {
+	function get_penta_scale(root, octave) {
 	  return [].concat(
 	    major_pentatonic_scale(root, octave),
 	    major_pentatonic_scale(root, octave + 1)
 	  );
 	}
 
-	function create_transport() {
-	  tick = 0;
+	function make_progression(scale) {
+	  return random_path_progression().map(c => get_triad(c, scale));
+	}
 
-	  new Tone$1.Loop((time, _) => play_progression(time), Tone$1.Time('1n') * 4).start(0);
+	function make_melody() {
+	  const durations = random_partition(7, 0.2);
+	  const isLast = x => x === durations.length - 1;
+	  return durations.map((d, i) => make_relative_tone(d, isLast(i)));
+	}
+
+	function make_relative_tone(duration, isLast) {
+	  const from_chord = isLast || flip$2(0.67);
+	  const source = from_chord ? 'chord' : 'scale';
+	  const degree = Math.floor(Math.random() * (from_chord ? 3 : 10));
+
+	  return { duration, source, degree };
+	}
+
+	function note_to_string({ duration, source, degree }) {
+	  return (source === 'chord' ? 'C' : 'S') + '.' + degree + ' - ' + duration;
+	}
+
+	const synth = get_synth();
+	const polySynth = get_polySynth();
+	const membraneSynth = get_membraneSynth();
+
+	synth.toMaster();
+	polySynth.toMaster();
+	membraneSynth.toMaster();
+
+	let current_schemata;
+
+	function create_transport() {
+	  current_schemata = make_schemata('E', 4);
+	  new Tone$1.Loop((time, _) => play_song(time), Tone$1.Time('4m')).start(0);
 
 	  return Tone$1.Transport;
 	}
 
-	// -------
+	function play_song(time) {
+	  if (flip$2(0.2)) current_schemata = make_schemata('E', 4);
 
-	function play_progression(time) {
-	  const scale_root = get_selected_scale_root();
-	  const scale = get_chord_scale(scale_root, octave);
-	  const off_chord = get_off_chord(scale_root, octave + 1);
-	  const progression = random_path_progression(); //random_from(progressions);
-	  const beat = random_subset(4, 0.5);
-	  const beat2 = random_subset(8, 0.5);
+	  const song = generate_from_schemata(current_schemata);
 
-	  console.log('Chord progression: ', progression);
-	  console.log('Beat: ', beat);
-	  console.log('Beat2: ', beat2);
-
-	  for (let i = 0; i < 4; i++) {
-	    play_chord_and_melody(
-	      progression[i],
-	      scale,
-	      off_chord,
-	      beat,
-	      beat2,
-	      time + Tone$1.Time('1n') * i,
-	      tick
-	    );
-	  }
-	  tick++;
-	}
-
-	function play_chord_and_melody(root, scale, off_chord, beat, beat2, time, tick) {
-	  const durations = random_partition(8, 0.2);
-	  const chord = get_triad(root, scale);
-	  const melody = [].concat(chord, chord, chord, off_chord);
-
-	  if (tick > 0) play_chord(chord, '4n', time);
+	  console.log(current_schemata.melody.map(m => note_to_string(m)));
 
 	  let elapsed = time;
-	  for (let i = 0; i < durations.length; i++) {
-	    const tones = i == durations.length - 1 ? chord : melody;
-	    play_note(random_from(tones), durations[i], elapsed);
-	    elapsed += Tone$1.Time(durations[i]);
-	  }
-
-	  if (tick > 1) {
-	    elapsed = time;
-	    for (let i = 0; i < beat.length; i++) {
-	      if (beat[i]) play_beat('C2', '4n', elapsed);
-	      elapsed += Tone$1.Time('4n');
-	    }
-	  }
-
-	  if (tick > 2) {
-	    elapsed = time;
-	    for (let i = 0; i < beat2.length; i++) {
-	      if (beat2[i]) play_beat('G2', '8n', elapsed);
-	      elapsed += Tone$1.Time('8n');
-	    }
-	  }
+	  song.forEach(beat => {
+	    polySynth.triggerAttackRelease(beat.chord, '2n', elapsed);
+	    elapsed += Tone$1.Time('8n');
+	    beat.melody.forEach(tone => {
+	      synth.triggerAttackRelease(tone.note, tone.duration, elapsed);
+	      elapsed += Tone$1.Time(tone.duration);
+	    });
+	  });
 	}
 
-	function play_chord(note, duration, time) {
-	  console.log(note, duration);
-	  polySynth.triggerAttackRelease(note, duration, time);
-	}
-
-	function play_note(note, duration, time) {
-	  console.log(note, duration);
-	  synth.triggerAttackRelease(note, duration, time);
-	}
-
-	function play_beat(note, duration, time) {
-	  membraneSynth.triggerAttackRelease(note, duration, time);
-	}
-
-	function random_from(arr) {
-	  return arr[Math.floor(Math.random() * arr.length)];
-	}
+	//import create_transport from './main';
 
 	const transport = create_transport();
 
