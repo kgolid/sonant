@@ -1,7 +1,7 @@
 export function random_partition(n, prob) {
   let arr = [];
   for (let i = 0; i < n; i++) {
-    if (flip(prob)) {
+    if (i !== n - 1 && flip(prob)) {
       arr.push('4n');
       i++;
     } else if (flip(prob)) {
