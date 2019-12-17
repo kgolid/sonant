@@ -1,13 +1,9 @@
 import Tone from 'tone';
 
 export function get_synth() {
-  const synth = new Tone.Synth({
-    oscillator: { type: 'sine' },
-    envelope: {
-      attack: 0.03,
-      decay: 0.1,
-      sustain: 0.3,
-      release: 0.2
+  var synth = new Tone.Synth({
+    oscillator: {
+      type: 'sine'
     }
   });
 
