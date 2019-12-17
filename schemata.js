@@ -4,10 +4,10 @@ import { random_path_progression } from './progressions';
 import { flip } from './util';
 
 export function generate_from_schemata({ scale, progression, melody }) {
-  melody = mutate_melody(melody, 0.2);
+  melody = mutate_melody(melody, 0.3);
   return progression.map(chord => ({
     chord,
-    melody: mutate_melody(melody, 0).map(t => ({
+    melody: mutate_melody(melody, 0.1).map(t => ({
       note: get_note(t, scale, chord),
       duration: t.duration
     }))
