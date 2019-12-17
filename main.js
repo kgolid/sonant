@@ -23,13 +23,18 @@ function get_selected_scale_root() {
 }
 
 function get_chord_scale(root, octave) {
-  return [].concat(major_scale(root, octave), major_scale(root, octave + 1));
+  return [].concat(
+    major_scale(root, octave),
+    major_scale(root, octave + 1),
+    major_scale(root, octave + 2)
+  );
 }
 
 function get_off_chord(root, octave) {
   return [].concat(
     major_pentatonic_scale(root, octave),
-    major_pentatonic_scale(root, octave + 1)
+    major_pentatonic_scale(root, octave + 1),
+    major_pentatonic_scale(root, octave + 2)
   );
 }
 
@@ -46,7 +51,7 @@ export default function create_transport() {
 function play_progression(time) {
   const scale_root = get_selected_scale_root();
   const scale = get_chord_scale(scale_root, octave);
-  const off_chord = get_off_chord(scale_root, octave + 1);
+  const off_chord = get_off_chord(scale_root, octave);
   const progression = random_path_progression(); //random_from(progressions);
   const beat = random_subset(4, 0.5);
   const beat2 = random_subset(8, 0.5);
@@ -70,9 +75,10 @@ function play_progression(time) {
 }
 
 function play_chord_and_melody(root, scale, off_chord, beat, beat2, time, tick) {
-  const durations = random_partition(8, 0.2);
+  const durations = random_partition(7, 0.2);
   const chord = get_triad(root, scale);
-  const melody = [].concat(chord, chord, chord, off_chord);
+  const tones = get_triad(root + 7, scale);
+  const melody = [].concat(tones, tones, tones, tones, off_chord);
 
   if (tick > 0) play_chord(chord, '4n', time);
 
