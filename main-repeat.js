@@ -18,6 +18,7 @@ export default function create_transport() {
   current_schemata = make_schemata('E', 4);
   new Tone.Loop((time, _) => play_song(time), Tone.Time('4m')).start(0);
 
+  Tone.Transport.bpm.value = 120;
   return Tone.Transport;
 }
 
@@ -30,7 +31,7 @@ function play_song(time) {
 
   let elapsed = time;
   song.forEach(beat => {
-    polySynth.triggerAttackRelease(beat.chord, '2n', elapsed);
+    polySynth.triggerAttackRelease(beat.chord, '4n', elapsed);
     elapsed += Tone.Time('8n');
     beat.melody.forEach(tone => {
       synth.triggerAttackRelease(tone.note, tone.duration, elapsed);
