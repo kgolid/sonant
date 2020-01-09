@@ -837,7 +837,7 @@
 
 	var synth = SampleLibrary.load({
 	  instruments: ['piano', 'guitar-acoustic'],
-	  baseUrl: "/tonejs-instruments/samples/"
+	  baseUrl: "/sonant/samples/"
 	});
 
 	synth['piano'].toMaster();
