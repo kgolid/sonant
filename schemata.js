@@ -1,23 +1,22 @@
 import { major_scale, major_pentatonic_scale, get_triad } from './scales';
 import { random_partition } from './partition';
-import { random_path_progression } from './progressions';
 import { flip } from './util';
 
 export function generate_from_schemata({ scale, progression, melody }) {
   melody = mutate_melody(melody, 0.3);
-  return progression.map(chord => ({
+  return progression.map((chord, i) => ({
     chord,
-    melody: mutate_melody(melody, 0.1).map(t => ({
+    melody: mutate_melody(melody, i === 3 ? 0.5 : 0.1).map(t => ({
       note: get_note(t, scale, chord),
       duration: t.duration
     }))
   }));
 }
 
-export function make_schemata(scale_root, octave) {
+export function make_schemata(scale_root, octave, prog) {
   const chord_scale = get_scale(scale_root, octave);
   const scale = get_penta_scale(scale_root, octave);
-  const progression = make_progression(chord_scale);
+  const progression = make_progression(chord_scale, prog);
   const melody = make_melody();
 
   return { scale, progression, melody };
@@ -43,8 +42,8 @@ function get_penta_scale(root, octave) {
   );
 }
 
-function make_progression(scale) {
-  return random_path_progression().map(c => get_triad(c, scale));
+function make_progression(scale, prog) {
+  return prog.map(c => get_triad(c, scale));
 }
 
 function make_melody() {
@@ -54,7 +53,7 @@ function make_melody() {
 }
 
 function make_relative_tone(duration, isLast) {
-  const from_chord = isLast || flip(0.67);
+  const from_chord = isLast || flip(0.6);
   const source = from_chord ? 'chord' : 'scale';
   const degree = Math.floor(Math.random() * (from_chord ? 3 : 10));
 
