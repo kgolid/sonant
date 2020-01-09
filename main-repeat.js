@@ -2,17 +2,26 @@ import Tone from 'tone';
 
 import { get_synth, get_polySynth, get_membraneSynth } from './synths';
 import { generate_from_schemata, make_schemata, note_to_string } from './schemata';
+import { random_path_progression } from './progressions';
 import { flip } from './util';
 
-const synth = get_synth();
+import { SampleLibrary } from './Tonejs-Instruments';
+
+//const synth = get_synth();
 const polySynth = get_polySynth();
 const membraneSynth = get_membraneSynth();
 
-synth.toMaster();
+//synth.toMaster();
 polySynth.toMaster();
 membraneSynth.toMaster();
 
 let current_schemata;
+var synth = SampleLibrary.load({
+  instruments: ['piano', 'guitar-acoustic']
+});
+
+synth['piano'].toMaster();
+synth['guitar-acoustic'].toMaster();
 
 export default function create_transport() {
   current_schemata = make_schemata('E', 4);
@@ -31,10 +40,10 @@ function play_song(time) {
 
   let elapsed = time;
   song.forEach(beat => {
-    polySynth.triggerAttackRelease(beat.chord, '4n', elapsed);
+    synth['guitar-acoustic'].triggerAttackRelease(beat.chord, '2n', elapsed);
     elapsed += Tone.Time('8n');
     beat.melody.forEach(tone => {
-      synth.triggerAttackRelease(tone.note, tone.duration, elapsed);
+      synth['piano'].triggerAttackRelease(tone.note, tone.duration, elapsed);
       elapsed += Tone.Time(tone.duration);
     });
   });
