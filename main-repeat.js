@@ -16,7 +16,8 @@ polySynth.toMaster();
 membraneSynth.toMaster();
 
 var synth = SampleLibrary.load({
-  instruments: ['piano', 'guitar-acoustic']
+  instruments: ['piano', 'guitar-acoustic'],
+  baseUrl: "/sonant/samples/"
 });
 
 synth['piano'].toMaster();
