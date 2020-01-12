@@ -27,143 +27,181 @@
 	var Tone$1 = unwrapExports(Tone);
 	var Tone_1 = Tone.Tone;
 
-	function get_polySynth() {
-	  const polySynth = new Tone$1.PolySynth(3, Tone$1.Synth, {
-	    oscillator: { type: 'triangle' },
-	    envelope: {
-	      attack: 0.1,
-	      decay: 0.1,
-	      sustain: 0.3,
-	      release: 0.1
-	    },
-	    volume: -5
-	  });
+	var seedRandom = createCommonjsModule(function (module) {
 
-	  return polySynth;
+	var width = 256;// each RC4 output is 0 <= x < 256
+	var chunks = 6;// at least six RC4 outputs for each double
+	var digits = 52;// there are 52 significant digits in a double
+	var pool = [];// pool: entropy pool starts empty
+	var GLOBAL = typeof commonjsGlobal === 'undefined' ? window : commonjsGlobal;
+
+	//
+	// The following constants are related to IEEE 754 limits.
+	//
+	var startdenom = Math.pow(width, chunks),
+	    significance = Math.pow(2, digits),
+	    overflow = significance * 2,
+	    mask = width - 1;
+
+
+	var oldRandom = Math.random;
+
+	//
+	// seedrandom()
+	// This is the seedrandom function described above.
+	//
+	module.exports = function(seed, options) {
+	  if (options && options.global === true) {
+	    options.global = false;
+	    Math.random = module.exports(seed, options);
+	    options.global = true;
+	    return Math.random;
+	  }
+	  var use_entropy = (options && options.entropy) || false;
+	  var key = [];
+
+	  // Flatten the seed string or build one from local entropy if needed.
+	  var shortseed = mixkey(flatten(
+	    use_entropy ? [seed, tostring(pool)] :
+	    0 in arguments ? seed : autoseed(), 3), key);
+
+	  // Use the seed to initialize an ARC4 generator.
+	  var arc4 = new ARC4(key);
+
+	  // Mix the randomness into accumulated entropy.
+	  mixkey(tostring(arc4.S), pool);
+
+	  // Override Math.random
+
+	  // This function returns a random double in [0, 1) that contains
+	  // randomness in every bit of the mantissa of the IEEE 754 value.
+
+	  return function() {         // Closure to return a random double:
+	    var n = arc4.g(chunks),             // Start with a numerator n < 2 ^ 48
+	        d = startdenom,                 //   and denominator d = 2 ^ 48.
+	        x = 0;                          //   and no 'extra last byte'.
+	    while (n < significance) {          // Fill up all significant digits by
+	      n = (n + x) * width;              //   shifting numerator and
+	      d *= width;                       //   denominator and generating a
+	      x = arc4.g(1);                    //   new least-significant-byte.
+	    }
+	    while (n >= overflow) {             // To avoid rounding up, before adding
+	      n /= 2;                           //   last byte, shift everything
+	      d /= 2;                           //   right using integer Math until
+	      x >>>= 1;                         //   we have exactly the desired bits.
+	    }
+	    return (n + x) / d;                 // Form the number within [0, 1).
+	  };
+	};
+
+	module.exports.resetGlobal = function () {
+	  Math.random = oldRandom;
+	};
+
+	//
+	// ARC4
+	//
+	// An ARC4 implementation.  The constructor takes a key in the form of
+	// an array of at most (width) integers that should be 0 <= x < (width).
+	//
+	// The g(count) method returns a pseudorandom integer that concatenates
+	// the next (count) outputs from ARC4.  Its return value is a number x
+	// that is in the range 0 <= x < (width ^ count).
+	//
+	/** @constructor */
+	function ARC4(key) {
+	  var t, keylen = key.length,
+	      me = this, i = 0, j = me.i = me.j = 0, s = me.S = [];
+
+	  // The empty key [] is treated as [0].
+	  if (!keylen) { key = [keylen++]; }
+
+	  // Set up S using the standard key scheduling algorithm.
+	  while (i < width) {
+	    s[i] = i++;
+	  }
+	  for (i = 0; i < width; i++) {
+	    s[i] = s[j = mask & (j + key[i % keylen] + (t = s[i]))];
+	    s[j] = t;
+	  }
+
+	  // The "g" method returns the next (count) outputs as one number.
+	  (me.g = function(count) {
+	    // Using instance members instead of closure state nearly doubles speed.
+	    var t, r = 0,
+	        i = me.i, j = me.j, s = me.S;
+	    while (count--) {
+	      t = s[i = mask & (i + 1)];
+	      r = r * width + s[mask & ((s[i] = s[j = mask & (j + t)]) + (s[j] = t))];
+	    }
+	    me.i = i; me.j = j;
+	    return r;
+	    // For robust unpredictability discard an initial batch of values.
+	    // See http://www.rsa.com/rsalabs/node.asp?id=2009
+	  })(width);
 	}
 
-	function get_membraneSynth() {
-	  const synth = new Tone$1.MembraneSynth();
-	  synth.volume.value = -10;
-	  return synth;
-	}
-
-	const chromatic_scale = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-	const major_degrees = [0, 2, 4, 5, 7, 9, 11];
-	const major_pentatonic_degrees = [0, 2, 4, 7, 9];
-
-	function get_scale(root, oc, degrees) {
-	  return degrees.map(n => get_note(root + n, oc));
-	}
-
-	function get_note(pos, octave) {
-	  return pos < 12
-	    ? chromatic_scale[pos] + octave
-	    : chromatic_scale[pos % 12] + (octave + 1);
-	}
-
-	const major_scale = (root, oct) =>
-	  get_scale(tone_to_index(root), oct, major_degrees);
-
-	const major_pentatonic_scale = (root, oct) =>
-	  get_scale(tone_to_index(root), oct, major_pentatonic_degrees);
-
-	// 1 - 7
-	const get_triad = (n, arr) => [
-	  arr[n - 1],
-	  arr[(n + 1) % arr.length],
-	  arr[(n + 3) % arr.length]
-	];
-
-	function tone_to_index(tone) {
-	  return chromatic_scale.indexOf(tone);
-	}
-
-	function random_partition(n, prob) {
-	  let arr = [];
-	  for (let i = 0; i < n; i++) {
-	    if (i !== n - 1 && flip(prob)) {
-	      arr.push('4n');
-	      i++;
-	    } else if (flip(prob)) {
-	      arr.push('16n');
-	      arr.push('16n');
-	    } else {
-	      arr.push('8n');
+	//
+	// flatten()
+	// Converts an object tree to nested arrays of strings.
+	//
+	function flatten(obj, depth) {
+	  var result = [], typ = (typeof obj)[0], prop;
+	  if (depth && typ == 'o') {
+	    for (prop in obj) {
+	      try { result.push(flatten(obj[prop], depth - 1)); } catch (e) {}
 	    }
 	  }
-	  return arr;
+	  return (result.length ? result : typ == 's' ? obj : obj + '\0');
 	}
 
-	function flip(prob) {
-	  return Math.random() < prob;
+	//
+	// mixkey()
+	// Mixes a string seed into a key that is an array of integers, and
+	// returns a shortened string seed that is equivalent to the result key.
+	//
+	function mixkey(seed, key) {
+	  var stringseed = seed + '', smear, j = 0;
+	  while (j < stringseed.length) {
+	    key[mask & j] =
+	      mask & ((smear ^= key[mask & j] * 19) + stringseed.charCodeAt(j++));
+	  }
+	  return tostring(key);
 	}
 
-	function flip$1(prob) {
-	  return Math.random() < prob;
+	//
+	// autoseed()
+	// Returns an object for autoseeding, using window.crypto if available.
+	//
+	/** @param {Uint8Array=} seed */
+	function autoseed(seed) {
+	  try {
+	    GLOBAL.crypto.getRandomValues(seed = new Uint8Array(width));
+	    return tostring(seed);
+	  } catch (e) {
+	    return [+new Date, GLOBAL, GLOBAL.navigator && GLOBAL.navigator.plugins,
+	            GLOBAL.screen, tostring(pool)];
+	  }
 	}
 
-	function generate_from_schemata({ scale, progression, melody }) {
-	  melody = mutate_melody(melody, 0.3);
-	  return progression.map((chord, i) => ({
-	    chord,
-	    melody: mutate_melody(melody, i === 3 ? 0.5 : 0.1).map(t => ({
-	      note: get_note$1(t, scale, chord),
-	      duration: t.duration
-	    }))
-	  }));
+	//
+	// tostring()
+	// Converts an array of charcodes to a string
+	//
+	function tostring(a) {
+	  return String.fromCharCode.apply(0, a);
 	}
 
-	function make_schemata(scale_root, octave, prog) {
-	  const chord_scale = get_scale$1(scale_root, octave);
-	  const scale = get_penta_scale(scale_root, octave);
-	  const progression = make_progression(chord_scale, prog);
-	  const melody = make_melody();
-
-	  return { scale, progression, melody };
-	}
-
-	function mutate_melody(melody, prob) {
-	  return melody.map(t => (flip$1(prob) ? make_relative_tone(t.duration, false) : t));
-	}
-
-	function get_note$1(relative_note, scale, chord) {
-	  const source = relative_note.source === 'chord' ? chord : scale;
-	  return source[relative_note.degree];
-	}
-
-	function get_scale$1(root, octave) {
-	  return [].concat(major_scale(root, octave), major_scale(root, octave + 1));
-	}
-
-	function get_penta_scale(root, octave) {
-	  return [].concat(
-	    major_pentatonic_scale(root, octave),
-	    major_pentatonic_scale(root, octave + 1)
-	  );
-	}
-
-	function make_progression(scale, prog) {
-	  return prog.map(c => get_triad(c, scale));
-	}
-
-	function make_melody() {
-	  const durations = random_partition(7, 0.2);
-	  const isLast = x => x === durations.length - 1;
-	  return durations.map((d, i) => make_relative_tone(d, isLast(i)));
-	}
-
-	function make_relative_tone(duration, isLast) {
-	  const from_chord = isLast || flip$1(0.6);
-	  const source = from_chord ? 'chord' : 'scale';
-	  const degree = Math.floor(Math.random() * (from_chord ? 3 : 10));
-
-	  return { duration, source, degree };
-	}
-
-	function note_to_string({ duration, source, degree }) {
-	  return (source === 'chord' ? 'C' : 'S') + '.' + degree + ' - ' + duration;
-	}
+	//
+	// When seedrandom.js is loaded, we immediately mix a few bits
+	// from the built-in RNG into the entropy pool.  Because we do
+	// not want to intefere with determinstic PRNG state later,
+	// seedrandom will not call Math.random on its own again after
+	// initialization.
+	//
+	mixkey(Math.random(), pool);
+	});
+	var seedRandom_1 = seedRandom.resetGlobal;
 
 	function random_path_progression() {
 	  const c1 = 1;
@@ -179,16 +217,169 @@
 	}
 
 	function reduce_chord(chord) {
-	  if (chord === 2) return flip$2(0.5) ? 3 : 5;
-	  if (chord === 3) return flip$2(0.5) ? 4 : 6;
-	  if (chord === 4) return flip$2(0.5) ? 2 : 5;
-	  if (chord === 5) return flip$2(0.5) ? 3 : 6;
-	  if (chord === 6) return flip$2(0.5) ? 2 : 4;
+	  if (chord === 2) return flip(0.5) ? 3 : 5;
+	  if (chord === 3) return flip(0.5) ? 4 : 6;
+	  if (chord === 4) return flip(0.5) ? 2 : 5;
+	  if (chord === 5) return flip(0.5) ? 3 : 6;
+	  if (chord === 6) return flip(0.5) ? 2 : 4;
 	}
 
-	function flip$2(prob) {
+	function flip(prob) {
 	  return Math.random() < prob;
 	}
+
+	function flip$1(prob) {
+	  return Math.random() < prob;
+	}
+
+	function range(max) {
+	  return [...Array(max)].map((_, i) => i);
+	}
+
+	const chromatic_scale = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+	const major_degrees = [0, 2, 4, 5, 7, 9, 11];
+
+	const tone_from_index = index => {
+	  const note = chromatic_scale[index % 12];
+	  const octave = Math.floor(index / 12);
+	  if (!note) console.log('index, note, octave: ', index, note, octave);
+	  return note.concat(octave);
+	};
+
+	const index_from_tone = tone => {
+	  const note = [...tone].filter(isNaN).join('');
+	  const octave = parseInt([...tone].filter(isFinite).join(''));
+	  return chromatic_scale.indexOf(note) + octave * 12;
+	};
+
+	const get_scale = (root_index, octaves, degrees) =>
+	  [...Array(octaves)].flatMap((_, i) => degrees.map(d => i * 12 + d + root_index));
+
+	const major_scale = (root, octaves) => get_scale(root, octaves, major_degrees);
+
+	// 1 - 7
+	const triad = (n, arr) => [
+	  arr[n - 1],
+	  arr[(n + 1) % arr.length],
+	  arr[(n + 3) % arr.length]
+	];
+
+	const triads = (n, arr, octaves) =>
+	  [...Array(octaves)].flatMap((_, i) => triad(n, arr).map(x => x + 7 * i));
+
+	const random_int = (rng, min, max) => min + Math.floor(rng() * (max - min));
+
+	const flip$2 = (rng, chance) => rng() < (chance === undefined ? 0.5 : chance);
+
+	const shuffle = (rng, arr) => {
+	  const array = arr.slice(0);
+	  for (let i = array.length - 1; i > 0; i--) {
+	    const j = Math.floor(rng() * (i + 1));
+	    [array[i], array[j]] = [array[j], array[i]];
+	  }
+	  return array;
+	};
+
+	const get_partition = rng => shuffle(rng, get_elements(rng));
+
+	const get_elements = rng => get_rule(rng)();
+
+	const get_rule = rng => {
+	  const rule = n => {
+	    if (n === 4) return flip$2(rng, 0.25) ? [4] : [8, 8].flatMap(rule);
+	    if (n === 8) return flip$2(rng, 0.5) ? [8] : [16, 16];
+	    return [4, 4, 4, 4].flatMap(rule);
+	  };
+	  return rule;
+	};
+
+	const get_walk = (walker, start, number_of_steps) => {
+	  const walk = [];
+	  let pos = start;
+	  for (let i = 0; i < number_of_steps; i++) {
+	    walk.push(pos);
+	    pos = walker(pos);
+	  }
+
+	  return walk;
+	};
+
+	const mutate_walk = (rng, walk, walker, mutate_chance) => {
+	  const new_walk = [walk[0]];
+	  for (let i = 1; i < walk.length; i++) {
+	    new_walk.push(flip$2(rng, mutate_chance) ? walker(new_walk[i - 1]) : walk[i]);
+	  }
+	  return new_walk;
+	};
+
+	const snap_to_highlights = (rng, walk, highlights, snap_chance, max_snap_dist) =>
+	  walk.map(pnt => (flip$2(rng, snap_chance) ? snap_point(pnt, highlights, max_snap_dist) : pnt));
+
+	const snap_point = (point, highlights, max_snap_dist) => {
+	  const closest = highlights.sort((a, b) => Math.abs(point - a) - Math.abs(point - b))[0];
+	  return Math.abs(point - closest) <= max_snap_dist ? closest : point;
+	};
+
+	const get_walker = (
+	  rng,
+	  { min = 0, max = 10, min_stepsize = 0, max_stepsize = 1, leap_chance = 0 }
+	) => {
+	  return n => {
+	    if (n < min || n > max) return n;
+
+	    const max_step_down = Math.min(n - min, max_stepsize);
+	    const max_step_up = Math.min(max - n, max_stepsize);
+
+	    const at_top = n + min_stepsize > max;
+	    const at_bottom = n - min_stepsize < min;
+
+	    const leap = flip$2(rng, leap_chance);
+	    if (leap) {
+	      return random_int(rng, min, max + 1);
+	    }
+
+	    const going_up = !at_top && (at_bottom || flip$2(rng));
+	    const max_distance = 1 + (going_up ? max_step_up : max_step_down);
+	    const distance = random_int(rng, min_stepsize, max_distance);
+
+	    return going_up ? n + distance : n - distance;
+	  };
+	};
+
+	const get_configured_walker = (rng, range$$1) => {
+	  return get_walker(rng, {
+	    min: 0,
+	    max: range$$1,
+	    min_stepsize: 1,
+	    max_stepsize: 4,
+	    leap_chance: 0.2
+	  });
+	};
+
+	const get_melody_factory = (rng, root, chord_root, number_of_octaves) => {
+	  const scale = major_scale(index_from_tone(root), number_of_octaves);
+	  const chord_scale = major_scale(index_from_tone(chord_root), 2);
+	  const durations = get_partition(rng).map(x => '' + x + 'n');
+
+	  const walker = get_configured_walker(rng, scale.length - 1);
+	  const walk = get_walk(walker, random_int(rng, 0, 7), durations.length);
+
+	  return chord => {
+	    const chord_tones = triads(chord, range(scale.length), number_of_octaves);
+	    const mutated_walk = mutate_walk(rng, walk, walker, 0.2);
+	    const snapped_walk = snap_to_highlights(rng, mutated_walk, chord_tones, 0.8, 2);
+	    const scale_walk = snapped_walk.map(pos => scale[pos]);
+
+	    const chrd = triad(chord, chord_scale).map(tone_from_index);
+	    return {
+	      chord: chrd,
+	      tones: durations.map((d, i) => ({
+	        duration: d,
+	        tone: tone_from_index(scale_walk[i])
+	      }))
+	    };
+	  };
+	};
 
 	/**
 	 * @fileoverview A sample library and quick-loader for tone.js
@@ -827,80 +1018,84 @@
 	  }
 	};
 
-	//const synth = get_synth();
-	const polySynth = get_polySynth();
-	const membraneSynth = get_membraneSynth();
-
-	//synth.toMaster();
-	polySynth.toMaster();
-	membraneSynth.toMaster();
+	const chord_instrument = 'cello';
+	const melody_instrument = 'xylophone';
 
 	var synth = SampleLibrary.load({
-	  instruments: ['piano', 'guitar-acoustic'],
-	  baseUrl: "/sonant/samples/"
+	  instruments: [chord_instrument, melody_instrument]
 	});
 
-	synth['piano'].toMaster();
-	synth['guitar-acoustic'].toMaster();
+	synth[chord_instrument].volume.value = -20;
 
-	let scale = 'E';
+	synth[chord_instrument].toMaster();
+	synth[melody_instrument].toMaster();
 
-	let schemata, schemata2;
-	let current_progression;
+	const rng = seedRandom();
+
+	const o1 = '3';
+	const o2 = '4';
+
+	let root;
+
+	let melody_factory_1;
+	let melody_factory_2;
+
+	let progression;
+
+	function get_selected_scale_root() {
+	  var e = document.getElementById('scales');
+	  var scale = e.options[e.selectedIndex].value;
+	  console.log(scale);
+	  return scale;
+	}
 
 	function create_transport() {
-	  current_progression = random_path_progression();
-	  schemata = make_schemata(scale, 2, current_progression);
-	  schemata2 = make_schemata(scale, 4, current_progression);
-
-	  console.log('Progression: ', current_progression);
-	  console.log('Guitar: ', schemata.melody.map(note_to_string));
-	  console.log('Piano: ', schemata2.melody.map(note_to_string));
+	  root = get_selected_scale_root();
+	  melody_factory_1 = get_melody_factory(rng, root + o1, root + o1, 2);
+	  melody_factory_2 = get_melody_factory(rng, root + o2, root + o1, 2);
+	  progression = random_path_progression();
 
 	  new Tone$1.Loop((time, _) => play_song(time), Tone$1.Time('4m')).start(0);
-
-	  Tone$1.Transport.bpm.value = 75;
+	  Tone$1.Transport.bpm.value = 80;
+	  Tone$1.Transport.swing = 0.5;
 	  return Tone$1.Transport;
 	}
 
 	function play_song(time) {
-	  if (flip$1(0.3)) {
-	    current_progression = random_path_progression();
-	    schemata = make_schemata(scale, 2, current_progression);
-	    schemata2 = make_schemata(scale, 4, current_progression);
-	    console.log('----------');
-	    console.log('Progression: ', current_progression);
-	    console.log('Guitar: ', schemata.melody.map(note_to_string));
-	    console.log('Piano: ', schemata2.melody.map(note_to_string));
-	  } else if (flip$1(0.6)) {
-	    schemata2 = make_schemata(scale, 4, current_progression);
-	    console.log('Piano: ', schemata2.melody.map(note_to_string));
+	  if (flip$1(0.5) || get_selected_scale_root() != root) {
+	    root = get_selected_scale_root();
+	    melody_factory_1 = get_melody_factory(rng, root + o1, root + o1, 2);
+	    melody_factory_2 = get_melody_factory(rng, root + o2, root + o1, 2);
+	    progression = random_path_progression();
 	  }
 
-	  const song = generate_from_schemata(schemata);
-	  const song2 = generate_from_schemata(schemata2);
+	  let melodies_1 = progression.map(c => melody_factory_1(c));
+	  melodies_1.forEach(m => console.log(m.tones.map(t => t.tone + '/' + t.duration)));
+
+	  let melodies_2 = progression.map(c => melody_factory_2(c));
+	  melodies_2.forEach(m => console.log(m.tones.map(t => t.tone + '/' + t.duration)));
 
 	  let elapsed = time;
-	  song.forEach(beat => {
-	    synth['guitar-acoustic'].triggerAttackRelease(beat.chord, '2n', elapsed);
-	    elapsed += Tone$1.Time('8n');
-	    beat.melody.forEach(tone => {
-	      synth['guitar-acoustic'].triggerAttackRelease(tone.note, tone.duration, elapsed);
-	      elapsed += Tone$1.Time(tone.duration);
+	  melodies_1.forEach(melody => {
+	    synth[chord_instrument].triggerAttackRelease(melody.chord, '1n', elapsed);
+	    melody.tones.forEach(beat => {
+	      if (flip$1(0.5))
+	        synth[melody_instrument].triggerAttackRelease(beat.tone, '4n', elapsed);
+	      elapsed += Tone$1.Time(beat.duration);
 	    });
 	  });
 
 	  elapsed = time;
-	  song2.forEach(beat => {
-	    elapsed += Tone$1.Time('8n');
-	    beat.melody.forEach(tone => {
-	      synth['piano'].triggerAttackRelease(tone.note, tone.duration, elapsed);
-	      elapsed += Tone$1.Time(tone.duration);
+	  melodies_2.forEach(melody => {
+	    melody.tones.forEach(beat => {
+	      if (flip$1(0.5))
+	        synth[melody_instrument].triggerAttackRelease(beat.tone, '4n', elapsed);
+	      elapsed += Tone$1.Time(beat.duration);
 	    });
 	  });
 	}
 
-	//import create_transport from './main';
+	// import create_transport from './main';
 
 	const transport = create_transport();
 
