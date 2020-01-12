@@ -16,6 +16,8 @@
     "chance": "1.0.18",
     "chromotome": "1.2.0",
     "justeer": "1.1.3",
+    "oddstruct": "^1.0.0",
+    "seed-random": "^2.2.0",
     "tone": "^13.8.25"
   },
   "devDependencies": {
