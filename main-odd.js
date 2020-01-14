@@ -69,7 +69,7 @@ function play_song(time) {
   melodies_1.forEach(melody => {
     synth[chord_instrument].triggerAttackRelease(melody.chord, '1n', elapsed);
     melody.tones.forEach(beat => {
-      if (flip(0.5))
+      if (beat.play)
         synth[melody_instrument].triggerAttackRelease(beat.tone, '4n', elapsed);
       elapsed += Tone.Time(beat.duration);
     });
@@ -78,7 +78,7 @@ function play_song(time) {
   elapsed = time;
   melodies_2.forEach(melody => {
     melody.tones.forEach(beat => {
-      if (flip(0.5))
+      if (beat.play)
         synth[melody_instrument].triggerAttackRelease(beat.tone, '4n', elapsed);
       elapsed += Tone.Time(beat.duration);
     });

@@ -45,6 +45,7 @@ export const get_melody_factory = (rng, root, chord_root, number_of_octaves) => 
       tones: durations.map((d, i) => ({
         duration: d,
         tone: tone_from_index(scale_walk[i])
+        play: flip(opts.play_chance)
       }))
     };
   };
