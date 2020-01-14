@@ -1098,8 +1098,8 @@
 	const melody_instrument = 'xylophone';
 
 	var synth = SampleLibrary.load({
-	  instruments: [chord_instrument, melody_instrument]
-	  //baseUrl: '/sonant/samples/' // Remove this line if working locally.
+	  instruments: [chord_instrument, melody_instrument],
+	  baseUrl: '/sonant/samples/' // Remove this line if working locally.
 	});
 
 	synth[chord_instrument].volume.value = -20;
