@@ -3,6 +3,8 @@ import seedrandom from 'seed-random';
 
 import { random_path_progression } from './progressions';
 import { flip } from './util';
+import visualize from './visualize';
+import { get_selected_values } from './ui';
 
 import { get_melody_factory } from './odd_melody';
 import { SampleLibrary } from './Tonejs-Instruments';
@@ -22,47 +24,76 @@ synth[melody_instrument].toMaster();
 
 const rng = seedrandom();
 
-const o1 = '3';
-const o2 = '4';
+const opts = {
+  octave_range: 2,
+  min_step_dist: 1,
+  max_step_dist: 3,
+  leap_chance: 0.2,
+  mutation_chance: 0.2,
+  snap_chance: 0.8,
+  snap_dist: 2,
+  play_chance: 0.5
+};
+
+const oct1 = '3';
+const oct2 = '4';
+const chord_oct = '3';
 
 let root;
 
-let melody_factory_1;
-let melody_factory_2;
+let melody_factory_1, melody_factory_2;
+let melodies_1, melodies_2;
 
 let progression;
 
 function get_selected_scale_root() {
   var e = document.getElementById('scales');
   var scale = e.options[e.selectedIndex].value;
-  console.log(scale);
   return scale;
+}
+
+function update_opts() {
+  let vals = get_selected_values();
+  opts.leap_chance = vals.leap_chance;
+  opts.snap_chance = vals.snap_chance;
+  opts.play_chance = vals.play_chance;
+  opts.mutation_chance = vals.mutation_chance;
 }
 
 export default function create_transport() {
   root = get_selected_scale_root();
-  melody_factory_1 = get_melody_factory(rng, root + o1, root + o1, 2);
-  melody_factory_2 = get_melody_factory(rng, root + o2, root + o1, 2);
+  update_opts();
+  melody_factory_1 = get_melody_factory(rng, root + oct1, root + chord_oct, opts);
+  melody_factory_2 = get_melody_factory(rng, root + oct2, root + chord_oct, opts);
   progression = random_path_progression();
 
   new Tone.Loop((time, _) => play_song(time), Tone.Time('4m')).start(0);
-  Tone.Transport.bpm.value = 80;
+  Tone.Transport.bpm.value = 60;
   Tone.Transport.swing = 0.5;
   return Tone.Transport;
 }
 
 function play_song(time) {
-  if (flip(0.5) || get_selected_scale_root() != root) {
+  if (get_selected_scale_root() != root) {
     root = get_selected_scale_root();
-    melody_factory_1 = get_melody_factory(rng, root + o1, root + o1, 2);
-    melody_factory_2 = get_melody_factory(rng, root + o2, root + o1, 2);
+    update_opts();
+    melody_factory_1 = get_melody_factory(rng, root + oct1, root + chord_oct, opts);
+    melody_factory_2 = get_melody_factory(rng, root + oct2, root + chord_oct, opts);
+  }
+
+  if (flip(0.3)) {
+    melody_factory_1 = get_melody_factory(rng, root + oct1, root + chord_oct, opts);
     progression = random_path_progression();
   }
 
-  let melodies_1 = progression.map(c => melody_factory_1(c));
+  if (flip(0.3)) {
+    melody_factory_2 = get_melody_factory(rng, root + oct2, root + chord_oct, opts);
+  }
+
+  melodies_1 = progression.map(c => melody_factory_1(c));
   melodies_1.forEach(m => console.log(m.tones.map(t => t.tone + '/' + t.duration)));
 
-  let melodies_2 = progression.map(c => melody_factory_2(c));
+  melodies_2 = progression.map(c => melody_factory_2(c));
   melodies_2.forEach(m => console.log(m.tones.map(t => t.tone + '/' + t.duration)));
 
   let elapsed = time;

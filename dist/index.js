@@ -267,6 +267,79 @@
 	const triads = (n, arr, octaves) =>
 	  [...Array(octaves)].flatMap((_, i) => triad(n, arr).map(x => x + 7 * i));
 
+	var visualize = (mel1, mel2) => {
+	  empty_node(document.getElementById('board'));
+	  let sketch = function(p) {
+	    let tick;
+	    p.setup = function() {
+	      const canvas = p.createCanvas(640, 298);
+	      canvas.parent('board');
+	      p.noStroke();
+	      p.frameRate(20);
+	      tick = 0;
+	    };
+
+	    p.draw = function() {
+	      p.background('#fff');
+
+	      display_lines();
+	      display_melody(mel1, p.color(230, 50, 80, 120));
+	      display_melody(mel2, p.color(255, 180, 18, 120));
+
+	      p.stroke('#000');
+	      p.line(tick * 2, 0, tick * 2, p.height);
+	      tick++;
+	    };
+
+	    function display_melody(melody, col) {
+	      p.fill(col);
+	      p.noStroke();
+	      let elapsed = 0;
+	      for (const bar of melody) {
+	        for (const tone of bar.tones) {
+	          const index = index_from_tone(tone.tone);
+	          const dur = duration(tone.duration);
+
+	          if (tone.play) display_tone(index, elapsed);
+	          elapsed += dur;
+	        }
+	      }
+	    }
+
+	    function display_lines() {
+	      p.stroke(0, 50);
+	      for (let i = p.height; i > 0; i -= 10) {
+	        p.line(0, i, p.width, i);
+	      }
+	    }
+
+	    function display_tone(tone, time) {
+	      p.ellipse(time * 10, 120 + p.height - tone * 5, 15, 15);
+	    }
+	  };
+	  new p5(sketch);
+	};
+
+	const empty_node = node => {
+	  while (node.firstChild) {
+	    node.removeChild(node.firstChild);
+	  }
+	};
+
+	const duration = s => {
+	  if (s === '4n') return 4;
+	  if (s === '8n') return 2;
+	  if (s === '16n') return 1;
+	};
+
+	function get_selected_values() {
+	  var leap_chance = parseFloat(document.getElementById('leap_chance').value);
+	  var snap_chance = parseFloat(document.getElementById('snap_chance').value);
+	  var play_chance = parseFloat(document.getElementById('play_chance').value);
+	  var mutation_chance = parseFloat(document.getElementById('mutation_chance').value);
+	  return { leap_chance, snap_chance, play_chance, mutation_chance };
+	}
+
 	const random_int = (rng, min, max) => min + Math.floor(rng() * (max - min));
 
 	const flip$2 = (rng, chance) => rng() < (chance === undefined ? 0.5 : chance);
@@ -346,28 +419,30 @@
 	  };
 	};
 
-	const get_configured_walker = (rng, range$$1) => {
-	  return get_walker(rng, {
-	    min: 0,
-	    max: range$$1,
-	    min_stepsize: 1,
-	    max_stepsize: 4,
-	    leap_chance: 0.2
-	  });
-	};
-
-	const get_melody_factory = (rng, root, chord_root, number_of_octaves) => {
-	  const scale = major_scale(index_from_tone(root), number_of_octaves);
+	const get_melody_factory = (rng, root, chord_root, opts) => {
+	  const scale = major_scale(index_from_tone(root), opts.octave_range);
 	  const chord_scale = major_scale(index_from_tone(chord_root), 2);
 	  const durations = get_partition(rng).map(x => '' + x + 'n');
 
-	  const walker = get_configured_walker(rng, scale.length - 1);
+	  const walker = get_walker(rng, {
+	    min: 0,
+	    max: scale.length - 1,
+	    min_stepsize: opts.min_step_dist,
+	    max_stepsize: opts.max_step_dist,
+	    leap_chance: opts.leap_chance
+	  });
 	  const walk = get_walk(walker, random_int(rng, 0, 7), durations.length);
 
 	  return chord => {
-	    const chord_tones = triads(chord, range(scale.length), number_of_octaves);
-	    const mutated_walk = mutate_walk(rng, walk, walker, 0.2);
-	    const snapped_walk = snap_to_highlights(rng, mutated_walk, chord_tones, 0.8, 2);
+	    const chord_tones = triads(chord, range(scale.length), opts.octave_range);
+	    const mutated_walk = mutate_walk(rng, walk, walker, opts.mutation_chance);
+	    const snapped_walk = snap_to_highlights(
+	      rng,
+	      mutated_walk,
+	      chord_tones,
+	      opts.snap_chance,
+	      opts.snap_dist
+	    );
 	    const scale_walk = snapped_walk.map(pos => scale[pos]);
 
 	    const chrd = triad(chord, chord_scale).map(tone_from_index);
@@ -375,7 +450,8 @@
 	      chord: chrd,
 	      tones: durations.map((d, i) => ({
 	        duration: d,
-	        tone: tone_from_index(scale_walk[i])
+	        tone: tone_from_index(scale_walk[i]),
+	        play: flip$1(opts.play_chance)
 	      }))
 	    };
 	  };
@@ -1022,8 +1098,8 @@
 	const melody_instrument = 'xylophone';
 
 	var synth = SampleLibrary.load({
-	  instruments: [chord_instrument, melody_instrument],
-	  baseUrl: '/sonant/samples/' // Remove this line if working locally.
+	  instruments: [chord_instrument, melody_instrument]
+	  //baseUrl: '/sonant/samples/' // Remove this line if working locally.
 	});
 
 	synth[chord_instrument].volume.value = -20;
@@ -1033,54 +1109,83 @@
 
 	const rng = seedRandom();
 
-	const o1 = '3';
-	const o2 = '4';
+	const opts = {
+	  octave_range: 2,
+	  min_step_dist: 1,
+	  max_step_dist: 3,
+	  leap_chance: 0.2,
+	  mutation_chance: 0.2,
+	  snap_chance: 0.8,
+	  snap_dist: 2,
+	  play_chance: 0.5
+	};
+
+	const oct1 = '3';
+	const oct2 = '4';
+	const chord_oct = '3';
 
 	let root;
 
-	let melody_factory_1;
-	let melody_factory_2;
+	let melody_factory_1, melody_factory_2;
+	let melodies_1, melodies_2;
 
 	let progression;
 
 	function get_selected_scale_root() {
 	  var e = document.getElementById('scales');
 	  var scale = e.options[e.selectedIndex].value;
-	  console.log(scale);
 	  return scale;
+	}
+
+	function update_opts() {
+	  let vals = get_selected_values();
+	  opts.leap_chance = vals.leap_chance;
+	  opts.snap_chance = vals.snap_chance;
+	  opts.play_chance = vals.play_chance;
+	  opts.mutation_chance = vals.mutation_chance;
 	}
 
 	function create_transport() {
 	  root = get_selected_scale_root();
-	  melody_factory_1 = get_melody_factory(rng, root + o1, root + o1, 2);
-	  melody_factory_2 = get_melody_factory(rng, root + o2, root + o1, 2);
+	  update_opts();
+	  melody_factory_1 = get_melody_factory(rng, root + oct1, root + chord_oct, opts);
+	  melody_factory_2 = get_melody_factory(rng, root + oct2, root + chord_oct, opts);
 	  progression = random_path_progression();
 
 	  new Tone$1.Loop((time, _) => play_song(time), Tone$1.Time('4m')).start(0);
-	  Tone$1.Transport.bpm.value = 80;
+	  Tone$1.Transport.bpm.value = 60;
 	  Tone$1.Transport.swing = 0.5;
 	  return Tone$1.Transport;
 	}
 
 	function play_song(time) {
-	  if (flip$1(0.5) || get_selected_scale_root() != root) {
+	  if (get_selected_scale_root() != root) {
 	    root = get_selected_scale_root();
-	    melody_factory_1 = get_melody_factory(rng, root + o1, root + o1, 2);
-	    melody_factory_2 = get_melody_factory(rng, root + o2, root + o1, 2);
+	    update_opts();
+	    melody_factory_1 = get_melody_factory(rng, root + oct1, root + chord_oct, opts);
+	    melody_factory_2 = get_melody_factory(rng, root + oct2, root + chord_oct, opts);
+	  }
+
+	  if (flip$1(0.3)) {
+	    melody_factory_1 = get_melody_factory(rng, root + oct1, root + chord_oct, opts);
 	    progression = random_path_progression();
 	  }
 
-	  let melodies_1 = progression.map(c => melody_factory_1(c));
+	  if (flip$1(0.3)) {
+	    melody_factory_2 = get_melody_factory(rng, root + oct2, root + chord_oct, opts);
+	  }
+
+	  melodies_1 = progression.map(c => melody_factory_1(c));
 	  melodies_1.forEach(m => console.log(m.tones.map(t => t.tone + '/' + t.duration)));
 
-	  let melodies_2 = progression.map(c => melody_factory_2(c));
+	  melodies_2 = progression.map(c => melody_factory_2(c));
 	  melodies_2.forEach(m => console.log(m.tones.map(t => t.tone + '/' + t.duration)));
 
 	  let elapsed = time;
 	  melodies_1.forEach(melody => {
 	    synth[chord_instrument].triggerAttackRelease(melody.chord, '1n', elapsed);
 	    melody.tones.forEach(beat => {
-	      if (flip$1(0.5))
+	      if (beat.play)
 	        synth[melody_instrument].triggerAttackRelease(beat.tone, '4n', elapsed);
 	      elapsed += Tone$1.Time(beat.duration);
 	    });
@@ -1089,11 +1194,13 @@
 	  elapsed = time;
 	  melodies_2.forEach(melody => {
 	    melody.tones.forEach(beat => {
-	      if (flip$1(0.5))
+	      if (beat.play)
 	        synth[melody_instrument].triggerAttackRelease(beat.tone, '4n', elapsed);
 	      elapsed += Tone$1.Time(beat.duration);
 	    });
 	  });
+
+	  visualize(melodies_1, melodies_2);
 	}
 
 	// import create_transport from './main';
