@@ -10,7 +10,8 @@ label {
 }
 
 body {
-  background: url('./bg.jpeg') no-repeat center center fixed;
+  background: url('https://cdn.jsdelivr.net/gh/kgolid/sonant@1574a62/bg.jpeg') no-repeat
+    center center fixed;
   background-size: cover;
 }
 
