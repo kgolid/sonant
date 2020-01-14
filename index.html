@@ -5,20 +5,37 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <title>Sketch</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.7.3/p5.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/0.7.3/addons/p5.dom.js"></script>
+    <link rel="stylesheet" href="style.css">
 </head>
-<body style="text-align:center; margin-top:50px;">
-    <select name="scales" id="scales">
-        <option value="C">C</option>
-        <option value="C#">C#</option>
-        <option value="D">D</option>
-        <option value="D#">D#</option>
-        <option selected value="E">E</option>
-        <option value="F">F</option>
-        <option value="F#">F#</option>
-        <option value="G">G</option>
-    </select>
-    <button id="restart">Start</button>
-    <button id="stop">Stop</button>
+<body style="text-align:center;">
+    <div class='card'>
+    <div class='header'>
+        <div class='header_title'>
+            <h1>Sonant</h1>
+        </div>
+        <div class='header_control'>
+            <select name="scales" id="scales">
+                <option value="C">C</option>
+                <option value="C#">C#</option>
+                <option value="D">D</option>
+                <option value="D#">D#</option>
+                <option selected value="E">E</option>
+                <option value="F">F</option>
+                <option value="F#">F#</option>
+                <option value="G">G</option>
+            </select>
+
+            <button id="restart">Start</button>
+            <button id="stop">Stop</button>
+        </div>
+    </div>
+    <div class='content'>
+        <div id='board'></div>
+    </div>
+    </div>
+</div>
 </body>
 
 <script src="dist/index.js"></script>
