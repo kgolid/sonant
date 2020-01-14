@@ -83,4 +83,6 @@ function play_song(time) {
       elapsed += Tone.Time(beat.duration);
     });
   });
+
+  visualize(melodies_1, melodies_2);
 }
