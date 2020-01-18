@@ -15,9 +15,15 @@ import {
 } from 'oddstruct';
 import { range, flip } from './util';
 
-export const get_melody_factory = (rng, root, chord_root, opts) => {
-  const scale = major_scale(index_from_tone(root), opts.octave_range);
+export const get_chords = (progression, octave, scale) => {
+  const chord_root = scale + octave;
   const chord_scale = major_scale(index_from_tone(chord_root), 2);
+  return progression.map(chord => triad(chord, chord_scale).map(tone_from_index));
+};
+
+export const get_melody_factory = (rng, octave, opts) => {
+  const root = opts.scale + octave;
+  const scale = major_scale(index_from_tone(root), opts.octave_range);
   const durations = get_partition(rng).map(x => '' + x + 'n');
 
   const walker = get_walker(rng, {
@@ -41,9 +47,7 @@ export const get_melody_factory = (rng, root, chord_root, opts) => {
     );
     const scale_walk = snapped_walk.map(pos => scale[pos]);
 
-    const chrd = triad(chord, chord_scale).map(tone_from_index);
     return {
-      chord: chrd,
       tones: durations.map((d, i) => ({
         duration: d,
         tone: tone_from_index(scale_walk[i]),
