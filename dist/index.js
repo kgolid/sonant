@@ -272,7 +272,7 @@
 	  let sketch = function(p) {
 	    let tick;
 	    p.setup = function() {
-	      const canvas = p.createCanvas(640, 298);
+	      const canvas = p.createCanvas(640, 297);
 	      canvas.parent('board');
 	      p.noStroke();
 	      p.frameRate(20);
@@ -314,7 +314,7 @@
 	    }
 
 	    function display_tone(tone, time) {
-	      p.ellipse(time * 10, 120 + p.height - tone * 5, 15, 15);
+	      p.ellipse(5+ time * 10, 120 + p.height - tone * 5, 15, 15);
 	    }
 	  };
 	  new p5(sketch);
