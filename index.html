@@ -11,52 +11,86 @@
 </head>
 <body style="text-align:center;">
     <div class='card'>
-    <div class='header'>
-        <div class='header_title'>
-            <h1>Sonant</h1>
-        </div>
-        <div class='header_control'>
-            <select name="scales" id="scales">
-                <option value="C">C</option>
-                <option value="C#">C#</option>
-                <option value="D">D</option>
-                <option value="D#">D#</option>
-                <option selected value="E">E</option>
-                <option value="F">F</option>
-                <option value="F#">F#</option>
-                <option value="G">G</option>
-            </select>
+        <div class='header'>
+            <div class='header_title'>
+                <h1>Sonant</h1>
+            </div>
+            <div class='header_control'>
+                <select name="scales" id="scales">
+                    <option value="C">C</option>
+                    <option value="C#">C#</option>
+                    <option value="D">D</option>
+                    <option value="D#">D#</option>
+                    <option selected value="E">E</option>
+                    <option value="F">F</option>
+                    <option value="F#">F#</option>
+                    <option value="G">G</option>
+                </select>
 
-            <button id="restart">Start</button>
-            <button id="stop">Stop</button>
+                <button id="restart">Start</button>
+                <button id="stop">Stop</button>
+            </div>
         </div>
-    </div>
-    <div class='content'>
-        <div id='board'></div>
-    </div>
-    <div class='dashboard'>
-        <div class='header_control_sub'>
-            <div>
-            <input type="range" id="leap_chance" name="leap_chance"
-                    min="0" max="1" step=0.1 value=0.2>
-            <label for="leap_chance">Leap Chance</label>
+        <div class='content'>
+            <div id='board'></div>
         </div>
-        <div>
-            <input type="range" id="snap_chance" name="snap_chance"
-                    min="0" max="1" step=0.1 value=0.8>
-            <label for="snap_chance">Snap Chance</label>
+        <div class='dashboard'>
+            <div class='dashboard_sub'>
+                <div>
+                    <input type="range" id="play_chance" name="play_chance"
+                            min="0.1" max="1" step=0.1 value=0.5>
+                    <label for="play_chance">Play Chance</label>
+                </div>
+                <div>
+                    <input type="range" id="mutation_chance" name="mutation_chance"
+                            min="0" max="1" step=0.1 value=0.2>
+                    <label for="mutation_chance">Mutation Chance</label>
+                </div>
+                <div>
+                    <input type="range" id="snap_chance" name="snap_chance"
+                            min="0" max="1" step=0.1 value=0.8>
+                    <label for="snap_chance">Snap Chance</label>
+                </div>
+                <div>
+                    <input type="range" id="snap_dist" name="snap_dist"
+                            min="1" max="5" step=1 value=2>
+                    <label for="snap_dist">Max Snap Distance</label>
+                </div>
+            </div>
+            <div class='dashboard_sub'>
+                <div>
+                    <input type="range" id="octave_range" name="octave_range"
+                            min="1" max="3" step=1 value=2>
+                    <label for="octave_range">Octave Range</label>
+                </div>
+                <div>
+                    <input type="range" id="min_step" name="min_step"
+                            min="0" max="3" step=1 value=1>
+                    <label for="min_step">Min Step Distance</label>
+                </div>
+                <div>
+                    <input type="range" id="max_step" name="max_step"
+                            min="1" max="5" step=1 value=3>
+                    <label for="max_step">Max Step Distance</label>
+                </div>
+                <div>
+                    <input type="range" id="leap_chance" name="leap_chance"
+                            min="0" max="1" step=0.1 value=0.2>
+                    <label for="leap_chance">Leap Chance</label>
+                </div>
+            </div>
         </div>
-        <div>
-            <input type="range" id="mutation_chance" name="mutation_chance"
-                    min="0" max="1" step=0.1 value=0.2>
-            <label for="mutation_chance">Mutation Chance</label>
+        <div class='legend'>
+            <p><strong>Play Chance:</strong> The probability of playing (and displaying) a note. (0-1)</p>
+            <p><strong>Mutation Chance:</strong> The probability of a note getting changed within a progression. (0-1)</p>
+            <p><strong>Snap Chance:</strong> The probability of a note snapping to a nearby chord note. (0-1)</p>
+            <p><strong>Max Snap Distance:</strong> The maximum distance a chord can snap (1-5)</p>
+            
+            <p><strong>Octave Range:</strong> The octave range of which a note can be placed within. (1-3)</p>
+            <p><strong>Min Step Distance:</strong> The minimum distance the next note moves from the current note. (0-3)</p>
+            <p><strong>Max Step Distance:</strong> The maximum distance the next note moves from the current note. (2-5)</p>
+            <p><strong>Leap Chance:</strong> The probability of placing the next note randomly. (0-1)</p>
         </div>
-        <div>
-            <input type="range" id="play_chance" name="play_chance"
-                    min="0.1" max="1" step=0.1 value=0.5>
-            <label for="play_chance">Play Chance</label>
-        </div>
-    </div>
     </div>
 </div>
 </body>

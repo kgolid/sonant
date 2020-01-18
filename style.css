@@ -5,8 +5,9 @@
 }
 
 label {
-  font-family: Arial;
+  font-family: Helvetica, Arial, sans-serif;
   font-size: 10pt;
+  margin-left: 10px;
 }
 
 body {
@@ -18,7 +19,7 @@ body {
 .card {
   text-align: left;
   padding: 20px;
-  margin-top: 100px;
+  margin: 50px 0;
   background: #fff;
   display: inline-block;
   min-width: 700px;
@@ -44,21 +45,38 @@ body {
   width: calc(100% - 205px);
 }
 
-.header_control_sub {
-  text-align: left;
-  display: inline-block;
-  width: 50%;
-}
-
 .content,
-.dashboard {
+.dashboard,
+.legend {
   border: 1px solid black;
   border-top: none;
-  padding: 20px;
+  padding: 25px;
+}
+
+.dashboard_sub {
+  text-align: left;
+  display: inline-block;
+  width: 300px;
+  vertical-align: top;
+}
+
+.legend {
+  padding-top: 35px;
+}
+
+.legend p {
+  margin-bottom: 10px;
+  font-size: 11pt;
+  font-family: Helvetica, Arial, sans-serif;
+}
+
+.legend p strong {
+  display: inline-block;
+  width: 160px;
 }
 
 #board {
-  width:644px;
+  width: 644px;
   height: 300px;
   border: 1px solid black;
 }
@@ -70,4 +88,8 @@ select {
   border: none;
   border: 1px solid #000;
   border-radius: 0;
+}
+
+select {
+  width: 50px;
 }
