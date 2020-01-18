@@ -30,9 +30,10 @@ export const get_melody_factory = (rng, octave, opts) => {
     min: 0,
     max: scale.length - 1,
     min_stepsize: opts.min_step_dist,
-    max_stepsize: opts.max_step_dist,
+    max_stepsize: Math.max(opts.min_step_dist, opts.max_step_dist),
     leap_chance: opts.leap_chance
   });
+
   const walk = get_walk(walker, random_int(rng, 0, 7), durations.length);
 
   return chord => {
