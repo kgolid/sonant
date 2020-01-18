@@ -4,7 +4,7 @@ import seedrandom from 'seed-random';
 import { random_path_progression } from './progressions';
 import { flip } from './util';
 import visualize from './visualize';
-import { get_selected_values } from './ui';
+import { get_selected_values, values_has_changed } from './ui';
 
 import { get_melody_factory } from './odd_melody';
 import { SampleLibrary } from './Tonejs-Instruments';
@@ -53,6 +53,7 @@ function get_selected_scale_root() {
 }
 
 function update_opts() {
+  root = get_selected_scale_root();
   let vals = get_selected_values();
   opts.leap_chance = vals.leap_chance;
   opts.snap_chance = vals.snap_chance;
@@ -61,7 +62,6 @@ function update_opts() {
 }
 
 export default function create_transport() {
-  root = get_selected_scale_root();
   update_opts();
   melody_factory_1 = get_melody_factory(rng, root + oct1, root + chord_oct, opts);
   melody_factory_2 = get_melody_factory(rng, root + oct2, root + chord_oct, opts);
@@ -74,8 +74,8 @@ export default function create_transport() {
 }
 
 function play_song(time) {
-  if (get_selected_scale_root() != root) {
-    root = get_selected_scale_root();
+  if (get_selected_scale_root() != root || values_has_changed(opts)) {
+    console.log('update next');
     update_opts();
     melody_factory_1 = get_melody_factory(rng, root + oct1, root + chord_oct, opts);
     melody_factory_2 = get_melody_factory(rng, root + oct2, root + chord_oct, opts);

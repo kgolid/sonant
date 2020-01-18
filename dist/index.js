@@ -333,11 +333,17 @@
 	};
 
 	function get_selected_values() {
-	  var leap_chance = parseFloat(document.getElementById('leap_chance').value);
-	  var snap_chance = parseFloat(document.getElementById('snap_chance').value);
-	  var play_chance = parseFloat(document.getElementById('play_chance').value);
-	  var mutation_chance = parseFloat(document.getElementById('mutation_chance').value);
+	  const leap_chance = parseFloat(document.getElementById('leap_chance').value);
+	  const snap_chance = parseFloat(document.getElementById('snap_chance').value);
+	  const play_chance = parseFloat(document.getElementById('play_chance').value);
+	  const mutation_chance = parseFloat(document.getElementById('mutation_chance').value);
 	  return { leap_chance, snap_chance, play_chance, mutation_chance };
+	}
+
+	function values_has_changed(current) {
+	  const selected_values = Object.entries(get_selected_values());
+	  console.log(current, selected_values);
+	  return selected_values.some(value => value[1] !== current[value[0]]);
 	}
 
 	const random_int = (rng, min, max) => min + Math.floor(rng() * (max - min));
@@ -1138,6 +1144,7 @@
 	}
 
 	function update_opts() {
+	  root = get_selected_scale_root();
 	  let vals = get_selected_values();
 	  opts.leap_chance = vals.leap_chance;
 	  opts.snap_chance = vals.snap_chance;
@@ -1146,7 +1153,6 @@
 	}
 
 	function create_transport() {
-	  root = get_selected_scale_root();
 	  update_opts();
 	  melody_factory_1 = get_melody_factory(rng, root + oct1, root + chord_oct, opts);
 	  melody_factory_2 = get_melody_factory(rng, root + oct2, root + chord_oct, opts);
@@ -1159,8 +1165,8 @@
 	}
 
 	function play_song(time) {
-	  if (get_selected_scale_root() != root) {
-	    root = get_selected_scale_root();
+	  if (get_selected_scale_root() != root || values_has_changed(opts)) {
+	    console.log('update next');
 	    update_opts();
 	    melody_factory_1 = get_melody_factory(rng, root + oct1, root + chord_oct, opts);
 	    melody_factory_2 = get_melody_factory(rng, root + oct2, root + chord_oct, opts);
