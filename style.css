@@ -19,7 +19,7 @@ body {
 .card {
   text-align: left;
   padding: 20px;
-  margin: 50px 0;
+  margin: 50px 10px;
   background: #fff;
   display: inline-block;
   min-width: 700px;
