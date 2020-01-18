@@ -1,4 +1,4 @@
-export function get_selected_values() {
+function get_selected_values() {
   const el = document.getElementById('scales');
   const scale = el.options[el.selectedIndex].value;
 
@@ -28,4 +28,9 @@ export function get_selected_values() {
 export function values_has_changed(current) {
   const selected_values = Object.entries(get_selected_values());
   return selected_values.some(value => value[1] !== current[value[0]]);
+}
+
+export function update_values(current) {
+  const selected_values = Object.entries(get_selected_values());
+  return selected_values.forEach(value => (current[value[0]] = value[1]));
 }

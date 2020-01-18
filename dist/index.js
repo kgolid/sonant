@@ -271,6 +271,7 @@
 	  empty_node(document.getElementById('board'));
 	  let sketch = function(p) {
 	    let tick;
+
 	    p.setup = function() {
 	      const canvas = p.createCanvas(640, 297);
 	      canvas.parent('board');
@@ -294,27 +295,24 @@
 	    function display_melody(melody, col) {
 	      p.fill(col);
 	      p.noStroke();
-	      let elapsed = 0;
-	      for (const bar of melody) {
-	        for (const tone of bar.tones) {
-	          const index = index_from_tone(tone.tone);
-	          const dur = duration(tone.duration);
-
-	          if (tone.play) display_tone(index, elapsed);
-	          elapsed += dur;
-	        }
+	      for (const tone of melody) {
+	        const index = index_from_tone(tone[1]);
+	        display_tone(index, tone[0]);
 	      }
 	    }
 
 	    function display_lines() {
-	      p.stroke(0, 50);
+	      p.stroke(0, 40);
 	      for (let i = p.height; i > 0; i -= 10) {
 	        p.line(0, i, p.width, i);
 	      }
+	      p.line((1 * p.width) / 4, 0, (1 * p.width) / 4, p.height);
+	      p.line((2 * p.width) / 4, 0, (2 * p.width) / 4, p.height);
+	      p.line((3 * p.width) / 4, 0, (3 * p.width) / 4, p.height);
 	    }
 
 	    function display_tone(tone, time) {
-	      p.ellipse(5+ time * 10, 120 + p.height - tone * 5, 15, 15);
+	      p.ellipse(5 + time * 40, 120 + p.height - tone * 5, 15, 15);
 	    }
 	  };
 	  new p5(sketch);
@@ -326,24 +324,41 @@
 	  }
 	};
 
-	const duration = s => {
-	  if (s === '4n') return 4;
-	  if (s === '8n') return 2;
-	  if (s === '16n') return 1;
-	};
-
 	function get_selected_values() {
+	  const el = document.getElementById('scales');
+	  const scale = el.options[el.selectedIndex].value;
+
 	  const leap_chance = parseFloat(document.getElementById('leap_chance').value);
 	  const snap_chance = parseFloat(document.getElementById('snap_chance').value);
 	  const play_chance = parseFloat(document.getElementById('play_chance').value);
 	  const mutation_chance = parseFloat(document.getElementById('mutation_chance').value);
-	  return { leap_chance, snap_chance, play_chance, mutation_chance };
+
+	  const min_step_dist = parseFloat(document.getElementById('min_step').value);
+	  const max_step_dist = parseFloat(document.getElementById('max_step').value);
+	  const snap_dist = parseFloat(document.getElementById('snap_dist').value);
+	  const octave_range = parseFloat(document.getElementById('octave_range').value);
+
+	  return {
+	    scale,
+	    leap_chance,
+	    snap_chance,
+	    play_chance,
+	    mutation_chance,
+	    min_step_dist,
+	    max_step_dist,
+	    snap_dist,
+	    octave_range
+	  };
 	}
 
 	function values_has_changed(current) {
 	  const selected_values = Object.entries(get_selected_values());
-	  console.log(current, selected_values);
 	  return selected_values.some(value => value[1] !== current[value[0]]);
+	}
+
+	function update_values(current) {
+	  const selected_values = Object.entries(get_selected_values());
+	  return selected_values.forEach(value => (current[value[0]] = value[1]));
 	}
 
 	const random_int = (rng, min, max) => min + Math.floor(rng() * (max - min));
@@ -425,18 +440,25 @@
 	  };
 	};
 
-	const get_melody_factory = (rng, root, chord_root, opts) => {
-	  const scale = major_scale(index_from_tone(root), opts.octave_range);
+	const get_chords = (progression, octave, scale) => {
+	  const chord_root = scale + octave;
 	  const chord_scale = major_scale(index_from_tone(chord_root), 2);
+	  return progression.map(chord => triad(chord, chord_scale).map(tone_from_index));
+	};
+
+	const get_melody_factory = (rng, octave, opts) => {
+	  const root = opts.scale + octave;
+	  const scale = major_scale(index_from_tone(root), opts.octave_range);
 	  const durations = get_partition(rng).map(x => '' + x + 'n');
 
 	  const walker = get_walker(rng, {
 	    min: 0,
 	    max: scale.length - 1,
 	    min_stepsize: opts.min_step_dist,
-	    max_stepsize: opts.max_step_dist,
+	    max_stepsize: Math.max(opts.min_step_dist, opts.max_step_dist),
 	    leap_chance: opts.leap_chance
 	  });
+
 	  const walk = get_walk(walker, random_int(rng, 0, 7), durations.length);
 
 	  return chord => {
@@ -451,9 +473,7 @@
 	    );
 	    const scale_walk = snapped_walk.map(pos => scale[pos]);
 
-	    const chrd = triad(chord, chord_scale).map(tone_from_index);
 	    return {
-	      chord: chrd,
 	      tones: durations.map((d, i) => ({
 	        duration: d,
 	        tone: tone_from_index(scale_walk[i]),
@@ -1116,6 +1136,7 @@
 	const rng = seedRandom();
 
 	const opts = {
+	  scale: 'E',
 	  octave_range: 2,
 	  min_step_dist: 1,
 	  max_step_dist: 3,
@@ -1130,83 +1151,77 @@
 	const oct2 = '4';
 	const chord_oct = '3';
 
-	let root;
-
-	let melody_factory_1, melody_factory_2;
-	let melodies_1, melodies_2;
-
-	let progression;
-
-	function get_selected_scale_root() {
-	  var e = document.getElementById('scales');
-	  var scale = e.options[e.selectedIndex].value;
-	  return scale;
-	}
-
-	function update_opts() {
-	  root = get_selected_scale_root();
-	  let vals = get_selected_values();
-	  opts.leap_chance = vals.leap_chance;
-	  opts.snap_chance = vals.snap_chance;
-	  opts.play_chance = vals.play_chance;
-	  opts.mutation_chance = vals.mutation_chance;
-	}
+	let melody_factory_1, melody_factory_2, progression;
 
 	function create_transport() {
-	  update_opts();
-	  melody_factory_1 = get_melody_factory(rng, root + oct1, root + chord_oct, opts);
-	  melody_factory_2 = get_melody_factory(rng, root + oct2, root + chord_oct, opts);
+	  update_values(opts);
+	  melody_factory_1 = get_melody_factory(rng, oct1, opts);
+	  melody_factory_2 = get_melody_factory(rng, oct2, opts);
 	  progression = random_path_progression();
 
-	  new Tone$1.Loop((time, _) => play_song(time), Tone$1.Time('4m')).start(0);
+	  new Tone$1.Loop(time => create_song(time), Tone$1.Time('4m')).start(0);
+
 	  Tone$1.Transport.bpm.value = 60;
 	  Tone$1.Transport.swing = 0.5;
 	  return Tone$1.Transport;
 	}
 
-	function play_song(time) {
-	  if (get_selected_scale_root() != root || values_has_changed(opts)) {
-	    console.log('update next');
-	    update_opts();
-	    melody_factory_1 = get_melody_factory(rng, root + oct1, root + chord_oct, opts);
-	    melody_factory_2 = get_melody_factory(rng, root + oct2, root + chord_oct, opts);
+	function create_song(time) {
+	  update_factories();
+
+	  const melody_1 = get_melody(melody_factory_1, progression);
+	  const melody_2 = get_melody(melody_factory_2, progression);
+	  const chords = get_chord_progression(progression);
+
+	  create_part(melody_1, time, melody_instrument, '4n');
+	  create_part(melody_2, time, melody_instrument, '4n');
+	  create_part(chords, time, chord_instrument, '1n');
+
+	  visualize(melody_1, melody_2);
+	}
+
+	function get_melody(factory, progression) {
+	  const melody = progression.map(factory);
+
+	  const time_note_pairs = [];
+	  let elapsed = 0;
+	  for (let i = 0; i < melody.length; i++) {
+	    for (let j = 0; j < melody[i].tones.length; j++) {
+	      const beat = melody[i].tones[j];
+	      if (beat.play) time_note_pairs.push([elapsed, beat.tone]);
+	      elapsed += Tone$1.Time(beat.duration);
+	    }
+	  }
+
+	  return time_note_pairs;
+	}
+
+	function get_chord_progression(progression) {
+	  const chords = get_chords(progression, chord_oct, opts.scale);
+	  return chords.map((chord, i) => [i * 4, chord]);
+	}
+
+	function create_part(melody, part_time, instrument, duration) {
+	  melody.forEach(([time, note]) => {
+	    synth[instrument].triggerAttackRelease(note, duration, time + part_time);
+	  });
+	}
+
+	function update_factories() {
+	  if (values_has_changed(opts)) {
+	    update_values(opts);
+	    melody_factory_1 = get_melody_factory(rng, oct1, opts);
+	    melody_factory_2 = get_melody_factory(rng, oct2, opts);
 	  }
 
 	  if (flip$1(0.3)) {
-	    melody_factory_1 = get_melody_factory(rng, root + oct1, root + chord_oct, opts);
+	    melody_factory_1 = get_melody_factory(rng, oct1, opts);
 	    progression = random_path_progression();
 	  }
 
 	  if (flip$1(0.3)) {
-	    melody_factory_2 = get_melody_factory(rng, root + oct2, root + chord_oct, opts);
+	    melody_factory_2 = get_melody_factory(rng, oct2, opts);
 	  }
-
-	  melodies_1 = progression.map(c => melody_factory_1(c));
-	  melodies_1.forEach(m => console.log(m.tones.map(t => t.tone + '/' + t.duration)));
-
-	  melodies_2 = progression.map(c => melody_factory_2(c));
-	  melodies_2.forEach(m => console.log(m.tones.map(t => t.tone + '/' + t.duration)));
-
-	  let elapsed = time;
-	  melodies_1.forEach(melody => {
-	    synth[chord_instrument].triggerAttackRelease(melody.chord, '1n', elapsed);
-	    melody.tones.forEach(beat => {
-	      if (beat.play)
-	        synth[melody_instrument].triggerAttackRelease(beat.tone, '4n', elapsed);
-	      elapsed += Tone$1.Time(beat.duration);
-	    });
-	  });
-
-	  elapsed = time;
-	  melodies_2.forEach(melody => {
-	    melody.tones.forEach(beat => {
-	      if (beat.play)
-	        synth[melody_instrument].triggerAttackRelease(beat.tone, '4n', elapsed);
-	      elapsed += Tone$1.Time(beat.duration);
-	    });
-	  });
-
-	  visualize(melodies_1, melodies_2);
 	}
 
 	// import create_transport from './main';
@@ -1214,8 +1229,7 @@
 	const transport = create_transport();
 
 	function restart() {
-	  transport.stop();
-	  transport.clear();
+	  stop();
 	  transport.start();
 	}
 

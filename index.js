@@ -5,8 +5,7 @@ import create_transport from './main-odd';
 const transport = create_transport();
 
 function restart() {
-  transport.stop();
-  transport.clear();
+  stop();
   transport.start();
 }
 

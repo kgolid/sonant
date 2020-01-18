@@ -4,6 +4,7 @@ export default (mel1, mel2) => {
   empty_node(document.getElementById('board'));
   let sketch = function(p) {
     let tick;
+
     p.setup = function() {
       const canvas = p.createCanvas(640, 297);
       canvas.parent('board');
@@ -27,27 +28,24 @@ export default (mel1, mel2) => {
     function display_melody(melody, col) {
       p.fill(col);
       p.noStroke();
-      let elapsed = 0;
-      for (const bar of melody) {
-        for (const tone of bar.tones) {
-          const index = index_from_tone(tone.tone);
-          const dur = duration(tone.duration);
-
-          if (tone.play) display_tone(index, elapsed);
-          elapsed += dur;
-        }
+      for (const tone of melody) {
+        const index = index_from_tone(tone[1]);
+        display_tone(index, tone[0]);
       }
     }
 
     function display_lines() {
-      p.stroke(0, 50);
+      p.stroke(0, 40);
       for (let i = p.height; i > 0; i -= 10) {
         p.line(0, i, p.width, i);
       }
+      p.line((1 * p.width) / 4, 0, (1 * p.width) / 4, p.height);
+      p.line((2 * p.width) / 4, 0, (2 * p.width) / 4, p.height);
+      p.line((3 * p.width) / 4, 0, (3 * p.width) / 4, p.height);
     }
 
     function display_tone(tone, time) {
-      p.ellipse(5+ time * 10, 120 + p.height - tone * 5, 15, 15);
+      p.ellipse(5 + time * 40, 120 + p.height - tone * 5, 15, 15);
     }
   };
   new p5(sketch);
