@@ -4,10 +4,15 @@
   box-sizing: border-box;
 }
 
-a {
-  color: black;
-  font-size: 10pt;
+p {
   font-family: Helvetica, Arial, sans-serif;
+  font-size: 10pt;
+}
+
+a {
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 10pt;
+  color: black;
 }
 
 label {
@@ -26,7 +31,7 @@ body {
   text-align: left;
   padding: 20px;
   margin: 50px 10px;
-  background: #fff;
+  background: #f6f6f0;
   display: inline-block;
   min-width: 700px;
 }
@@ -77,8 +82,6 @@ body {
 
 .legend p {
   margin-bottom: 10px;
-  font-size: 10pt;
-  font-family: Helvetica, Arial, sans-serif;
 }
 
 .legend p strong {
@@ -103,6 +106,7 @@ select {
   border: none;
   border: 1px solid #000;
   border-radius: 0;
+  background-color: #f6f6f0;
 }
 
 select {
