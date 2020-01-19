@@ -281,7 +281,7 @@
 	    };
 
 	    p.draw = function() {
-	      p.background('#fff');
+	      p.background('#f6f6f0');
 
 	      display_lines();
 	      display_melody(mel1, p.color(230, 50, 80, 120));
