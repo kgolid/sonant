@@ -4,6 +4,10 @@
   box-sizing: border-box;
 }
 
+a {
+  color: black;
+}
+
 label {
   font-family: Helvetica, Arial, sans-serif;
   font-size: 10pt;
@@ -47,7 +51,8 @@ body {
 
 .content,
 .dashboard,
-.legend {
+.legend,
+.footer {
   border: 1px solid black;
   border-top: none;
   padding: 25px;
@@ -73,6 +78,10 @@ body {
 .legend p strong {
   display: inline-block;
   width: 160px;
+}
+
+.footer {
+  text-align: center;
 }
 
 #board {
