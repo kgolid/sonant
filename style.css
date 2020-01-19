@@ -6,6 +6,8 @@
 
 a {
   color: black;
+  font-size: 10pt;
+  font-family: Helvetica, Arial, sans-serif;
 }
 
 label {
