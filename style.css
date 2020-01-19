@@ -58,6 +58,10 @@ body {
   padding: 25px;
 }
 
+.dashboard p {
+  margin-bottom: 15px;
+}
+
 .dashboard_sub {
   text-align: left;
   display: inline-block;
